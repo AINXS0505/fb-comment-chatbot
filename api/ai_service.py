@@ -45,7 +45,7 @@ async def analyze_and_generate_replies(
     extracted_phone = extract_phone_number(comment_text)
     api_key = settings.get("gemini_api_key", "").strip()
     system_prompt = settings.get("system_prompt", "")
-    model_name = settings.get("gemini_model", "gemini-1.5-flash")
+    model_name = settings.get("gemini_model", "gemini-3.5-flash-lite")
 
     # If no API key provided, use direct Huree.site template
     if not api_key:
@@ -97,7 +97,7 @@ async def analyze_and_generate_replies(
                     text_content = text_content[7:]
                 if text_content.endswith("```"):
                     text_content = text_content[:-3]
-                
+
                 result = json.loads(text_content.strip())
                 if extracted_phone and not result.get("phone"):
                     result["phone"] = extracted_phone

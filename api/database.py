@@ -29,6 +29,16 @@ DEFAULT_PAGES = [
     }
 ]
 
+HUREE_PROMO_TEXT = (
+    "Сайн байна уу! 🎬🍿\n\n"
+    "https://www.huree.site энэ сайтаар ороод бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино Хүрээ дээр бий!\n\n"
+    "🔹 1 кино — 3,900₮\n"
+    "🔹 Бүх кино — 15,900₮\n\n"
+    "QPay-ээр төлөөд үзэх эрхээ шууд нээгээрэй. Өдөр бүр шинэ кино нэмэгдэнэ! ✨"
+)
+
+HUREE_COMMENT_REPLY = "Сайн байна уу! Кино үзэх холбоос болон үнийн мэдээллийг хувийн чатаар тань илгээлээ. Та чатаа шалгаарай 🍿✨"
+
 def get_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -111,34 +121,37 @@ def init_db():
     );
     """)
 
-    # Default settings
+    # Default settings with Huree.site details
     default_settings = {
         "ai_provider": "gemini",
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
         "gemini_model": "gemini-1.5-flash",
         "system_prompt": (
-            "Та кино болон драма контент сонирхогчдод зориулсан Facebook хуудасны найрсаг, сонирхолтой туслах зөвлөх юм. "
-            "Хэрэглэгчийн бичсэн комментыг ойлгож, монгол хэлээр эелдэг, найрсаг хариулна. "
-            "Хэрэв кино үзэх линк, ангийн үргэлжлэл, үнэ болон дэлгэрэнгүй асуусан бол хувийн Messenger чатаар нь мэдээллийг илгээсэн болохыг хэлж, чатаа шалгахыг хүснэ. "
-            "Хэрэглэгч утасны дугаараа үлдээвэл баярлалаа гэдгээ илэрхийлж, тун удахгүй холбогдоно гэдгээ мэдэгдэнэ."
+            "Та 'Хүрээ Кино' (https://www.huree.site), 'Nice Drama Ai', 'WOW Mini Drama' хуудсуудын найрсаг онлайн туслах юм.\n"
+            "Үндсэн мэдээлэл:\n"
+            "- Вэбсайт: https://www.huree.site\n"
+            "- Бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино үзэх боломжтой.\n"
+            "- Үнэ: 1 кино — 3,900₮, Бүх кино үзэх багц — 15,900₮.\n"
+            "- Төлбөр: QPay-ээр шууд төлөөд эрхээ нээнэ. Өдөр бүр шинэ кино нэмэгддэг.\n"
+            "Дүрэм:\n"
+            "1. Хэрэглэгчийн коммент доор (public_reply): Эелдэг найрсаг мэндчилээд, кино үзэх холбоос болон дэлгэрэнгүйг хувийн чатаар илгээсэн тухай 1 өгүүлбэрээр бичиж, чатаа шалгахыг хүснэ.\n"
+            "2. Хувийн чатаар (private_reply): https://www.huree.site линк, 1 кино 3,900₮, бүх кино 15,900₮, QPay-ээр эрхээ шууд нээх мэдээллийг бүрэн дэлгэрэнгүй илгээнэ."
         ),
         "fb_page_access_token": DEFAULT_PAGES[0]["access_token"],
         "fb_verify_token": os.environ.get("VERIFY_TOKEN", "fb_chatbot_secret_verify_token"),
         "fb_app_secret": os.environ.get("APP_SECRET", "1125905093581533"),
-        "default_public_reply": "Сайн байна уу! Танд дэлгэрэнгүй мэдээллийг хувийн чатаар илгээлээ. Та чатаа шалгаарай 😊🍿",
-        "default_private_reply": "Сайн байна уу! Манай хуудсыг сонирхсонд баярлалаа. Та дараагийн анги болон киноны дэлгэрэнгүйг сонирхож байна уу?"
+        "default_public_reply": HUREE_COMMENT_REPLY,
+        "default_private_reply": HUREE_PROMO_TEXT
     }
 
     for k, v in default_settings.items():
-        cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES (?, ?)", (k, v))
+        cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)", (k, v))
 
-    # Add default post rule if empty
-    cursor.execute("SELECT COUNT(*) FROM post_rules")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("""
-        INSERT INTO post_rules (post_id, post_name, keywords, public_reply_template, private_reply_template, use_ai, is_active)
-        VALUES ('default_all', 'Бүх хуудас & постын анхдагч тохиргоо', 'үргэлжлэл,хэд,үнэ,үзэх,линк,хаана', '', '', 1, 1)
-        """)
+    # Add default post rule
+    cursor.execute("""
+    INSERT OR REPLACE INTO post_rules (id, post_id, post_name, keywords, public_reply_template, private_reply_template, use_ai, is_active)
+    VALUES (1, 'default_all', 'Хүрээ Кино (www.huree.site) Автомат хариу', 'үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,үнэтэй,сонирхож,байна', ?, ?, 1, 1)
+    """, (HUREE_COMMENT_REPLY, HUREE_PROMO_TEXT))
 
     conn.commit()
     conn.close()
@@ -152,7 +165,6 @@ def get_page_token(page_id: str) -> Optional[str]:
     conn.close()
     if row:
         return row["access_token"]
-    # Fallback to default in-memory list or system settings
     for p in DEFAULT_PAGES:
         if p["page_id"] == page_id:
             return p["access_token"]

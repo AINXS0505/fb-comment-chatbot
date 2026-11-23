@@ -2,8 +2,9 @@ import os
 import sys
 import csv
 import io
+import json
 from pathlib import Path
-from fastapi import FastAPI, Request, Response, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, Request, Response, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -80,104 +81,107 @@ async def verify_fb_webhook(request: Request):
 
 @app.post("/api/webhook")
 @app.post("/webhook")
-async def receive_fb_webhook(request: Request, background_tasks: BackgroundTasks):
+async def receive_fb_webhook(request: Request):
     """
-    Facebook-ээс коммент болон мессежийн өөрчлөлт ирэх POST хүсэлт
+    Facebook-ээс коммент болон мессежийн өөрчлөлт ирэх POST хүсэлт.
+    Vercel serverless орчинд ажиллахын тулд synchronously await хийж гүйцэтгэнэ.
     """
     raw_body = await request.body()
-    signature = request.headers.get("x-hub-signature-256", "")
-
     settings = database.get_settings()
-    app_secret = settings.get("fb_app_secret", "")
-
-    # Meta гарын үсэг шалгах (хэрэв тохируулагдсан бол)
-    if app_secret and signature and not facebook_service.verify_signature(raw_body, signature, app_secret):
-        print("[Facebook Webhook] Хүчингүй гарын үсэг (Invalid signature) ирлээ.")
-        # Logging without rejecting in initial test phase
-        pass
 
     try:
         body = await request.json()
+        print(f"[Webhook Event Received]: {json.dumps(body)}")
     except Exception:
         return Response(content="Invalid JSON", status_code=400)
 
-    # Facebook 5 секундийн дотор 200 OK авах ёстой тул ар талд ажиллахаар (BackgroundTasks) илгээнэ
-    background_tasks.add_task(process_webhook_event, body, settings)
+    # Serverless дээр background task хөлддөг тул шууд await хийж гүйцэтгэнэ
+    try:
+        await process_webhook_event(body, settings)
+    except Exception as e:
+        print(f"[Webhook Process Error]: {e}")
+
     return Response(content="EVENT_RECEIVED", status_code=200)
 
 
 async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
     """
-    Ирсэн Facebook үйл явдлыг шалгаж, коммент мөн бол AI-аар хариулуулах функц
+    Ирсэн Facebook үйл явдлыг шалгаж, коммент мөн бол шууд хариулах функц
     """
     if body.get("object") != "page":
         return
 
+    default_public_reply = settings.get("default_public_reply", ai_service.HUREE_COMMENT_REPLY)
+    default_private_reply = settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
+
     for entry in body.get("entry", []):
         page_id = str(entry.get("id"))
-        # Get specific Page Access Token for this page!
+        # Тухайн хуудасны Page Access Token-г дуудах
         page_token = database.get_page_token(page_id) or settings.get("fb_page_access_token", "")
 
         for change in entry.get("changes", []):
             field = change.get("field")
             val = change.get("value", {})
 
-            # Зөвхөн шинээр нэмэгдсэн коммент мөн эсэхийг шалгах
-            if field == "feed" and val.get("item") == "comment" and val.get("verb") == "add":
-                comment_id = str(val.get("comment_id"))
+            # Зөвхөн коммент мөн эсэхийг шалгах (item == comment эсвэл comment_id байгаа эсэх)
+            is_comment = (val.get("item") == "comment") or ("comment_id" in val)
+            verb = val.get("verb", "add")
+
+            if is_comment and verb in ["add", "edited", None]:
+                comment_id = str(val.get("comment_id") or val.get("id") or "")
                 post_id = str(val.get("post_id") or "default_all")
                 sender = val.get("from", {})
-                sender_id = str(sender.get("id"))
+                sender_id = str(sender.get("id") or "")
                 sender_name = sender.get("name", "Үйлчлүүлэгч")
-                comment_text = val.get("message", "").strip()
+                comment_text = str(val.get("message") or "").strip()
 
-                # Хуудас өөрийнхөө комментод давхар хариулахаас сэргийлэх
-                if sender_id == page_id:
+                if not comment_id:
+                    continue
+
+                # Ботын өөрийн хариулсан комментод давхар хариулж loop үүсгэхээс сэргийлэх
+                if "huree.site" in comment_text.lower() or "чатаар тань илгээлээ" in comment_text:
+                    print(f"[Skip self bot reply]: {comment_id}")
                     continue
 
                 # Давхардаж боловсруулагдахаас сэргийлэх (Deduplication)
                 if database.is_comment_processed(comment_id):
+                    print(f"[Skip already processed comment]: {comment_id}")
                     continue
 
-                # Тохирох дүрмийг олох
-                post_rules = database.get_post_rules()
-                matched_rule = None
-                for r in post_rules:
-                    if r["is_active"] and (r["post_id"] == post_id or r["post_id"] == "default_all"):
-                        matched_rule = r
-                        break
+                print(f"[Processing Comment]: Page: {page_id}, CommentID: {comment_id}, User: {sender_name}, Text: {comment_text}")
 
-                post_name = matched_rule["post_name"] if matched_rule else "Ерөнхий пост"
-                custom_public = matched_rule["public_reply_template"] if matched_rule else ""
-                custom_private = matched_rule["private_reply_template"] if matched_rule else ""
-
-                # AI шинжилгээ ба хариу бэлдэх
+                # AI шинжилгээ болон утасны дугаар шалгах
                 analysis = await ai_service.analyze_and_generate_replies(
                     comment_text=comment_text,
                     sender_name=sender_name,
-                    post_name=post_name,
+                    post_name="Хүрээ Кино",
                     settings=settings,
-                    custom_public_template=custom_public,
-                    custom_private_template=custom_private
+                    custom_public_template=default_public_reply,
+                    custom_private_template=default_private_reply
                 )
 
-                # Нийтийн коммент хариу илгээх
-                if analysis.get("public_reply") and page_token:
-                    await facebook_service.send_public_comment_reply(
+                public_reply_msg = analysis.get("public_reply") or default_public_reply
+                private_reply_msg = analysis.get("private_reply") or default_private_reply
+
+                # 1. Нийтийн коммент хариу илгээх (Public Comment Reply)
+                if page_token:
+                    pub_res = await facebook_service.send_public_comment_reply(
                         comment_id=comment_id,
-                        message=analysis["public_reply"],
+                        message=public_reply_msg,
                         access_token=page_token
                     )
+                    print(f"[Public Reply Result]: {pub_res}")
 
-                # Хувийн чатаар зурвас илгээх (Private Reply)
-                if analysis.get("private_reply") and page_token:
-                    await facebook_service.send_private_messenger_reply(
+                # 2. Хувийн чатаар зурвас илгээх (Private Reply)
+                if page_token:
+                    priv_res = await facebook_service.send_private_messenger_reply(
                         comment_id=comment_id,
-                        message=analysis["private_reply"],
+                        message=private_reply_msg,
                         access_token=page_token
                     )
+                    print(f"[Private Reply Result]: {priv_res}")
 
-                # Өгөгдлийн санд лог хадгалах & утасны дугаарыг бүртгэх
+                # 3. Өгөгдлийн санд бүртгэх
                 database.log_comment(
                     comment_id=comment_id,
                     post_id=post_id,
@@ -185,9 +189,9 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                     sender_name=sender_name,
                     comment_text=comment_text,
                     sentiment=analysis.get("sentiment", "neutral"),
-                    intent=analysis.get("intent", "general"),
-                    public_reply=analysis.get("public_reply", ""),
-                    private_reply=analysis.get("private_reply", ""),
+                    intent=analysis.get("intent", "movie_link"),
+                    public_reply=public_reply_msg,
+                    private_reply=private_reply_msg,
                     phone=analysis.get("phone")
                 )
 
@@ -286,9 +290,6 @@ class SimulateRequest(BaseModel):
 @app.post("/api/simulate")
 @app.post("/simulate")
 async def test_simulate(payload: SimulateRequest):
-    """
-    Facebook холбох шаардлагагүйгээр Dashboard дээр шууд AI хариуг турших
-    """
     settings = database.get_settings()
     analysis = await ai_service.analyze_and_generate_replies(
         comment_text=payload.comment_text,
@@ -297,7 +298,6 @@ async def test_simulate(payload: SimulateRequest):
         settings=settings
     )
 
-    # Симуляци хийсэн туршилтыг лог болгон хадгалж харуулах
     mock_comment_id = f"sim_{int(os.times().system * 1000)}"
     database.log_comment(
         comment_id=mock_comment_id,
@@ -306,7 +306,7 @@ async def test_simulate(payload: SimulateRequest):
         sender_name=payload.sender_name,
         comment_text=payload.comment_text,
         sentiment=analysis.get("sentiment", "neutral"),
-        intent=analysis.get("intent", "general"),
+        intent=analysis.get("intent", "movie_link"),
         public_reply=analysis.get("public_reply", ""),
         private_reply=analysis.get("private_reply", ""),
         phone=analysis.get("phone")

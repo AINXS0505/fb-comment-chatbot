@@ -8,11 +8,9 @@ GRAPH_API_URL = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
 
 def verify_signature(raw_body: bytes, signature_header: str, app_secret: str) -> bool:
     """
-    Facebook Webhook-оос ирсэн хүсэлтийн X-Hub-Signature-256-г шалгаж 
-    жинхэнэ Meta-ийн сервэр мөн эсэхийг баталгаажуулна.
+    Facebook Webhook-оос ирсэн хүсэлтийн X-Hub-Signature-256-г шалгах
     """
     if not app_secret or not signature_header:
-        # Хэрэв app secret тохируулаагүй бол (local dev үед) түр алгасна
         return True
 
     try:
@@ -36,47 +34,49 @@ async def send_public_comment_reply(comment_id: str, message: str, access_token:
     POST /{comment-id}/comments
     """
     if not access_token:
-        print("[MOCK / SIMULATOR] Access Token байхгүй тул бодит коммент хариу илгээгдсэнгүй.")
-        return {"id": f"mock_reply_{comment_id}", "status": "simulated"}
+        print(f"[Error] Access token байхгүй байна.")
+        return {"error": "Missing access token"}
 
     url = f"{GRAPH_API_URL}/{comment_id}/comments"
-    payload = {
-        "message": message,
-        "access_token": access_token
-    }
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(url, json=payload)
-        data = resp.json()
-        if resp.status_code != 200:
-            print(f"Facebook Comment Reply Error: {resp.status_code} - {data}")
-        return data
+    params = {"access_token": access_token}
+    payload = {"message": message}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, params=params, json=payload)
+            data = resp.json()
+            print(f"[Public Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {data}")
+            return data
+    except Exception as e:
+        print(f"[Public Reply Exception]: {e}")
+        return {"error": str(e)}
 
 async def send_private_messenger_reply(comment_id: str, message: str, access_token: str) -> Dict[str, Any]:
     """
     Хэрэглэгчийн Messenger чат руу Private Reply илгээх
     POST /me/messages
-    {
-      "recipient": { "comment_id": comment_id },
-      "message": { "text": message }
-    }
     """
     if not access_token:
-        print("[MOCK / SIMULATOR] Access Token байхгүй тул бодит чат зурвас илгээгдсэнгүй.")
-        return {"recipient_id": "mock_recipient", "message_id": f"mock_msg_{comment_id}", "status": "simulated"}
+        print(f"[Error] Access token байхгүй байна.")
+        return {"error": "Missing access token"}
 
     url = f"{GRAPH_API_URL}/me/messages"
+    params = {"access_token": access_token}
     payload = {
         "recipient": {
             "comment_id": comment_id
         },
         "message": {
             "text": message
-        },
-        "access_token": access_token
+        }
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(url, json=payload)
-        data = resp.json()
-        if resp.status_code != 200:
-            print(f"Facebook Private Reply Error: {resp.status_code} - {data}")
-        return data
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, params=params, json=payload)
+            data = resp.json()
+            print(f"[Private Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {data}")
+            return data
+    except Exception as e:
+        print(f"[Private Reply Exception]: {e}")
+        return {"error": str(e)}

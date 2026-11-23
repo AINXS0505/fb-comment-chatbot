@@ -5,7 +5,6 @@ import io
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, HTTPException, Query, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
@@ -28,16 +27,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-
 # Initialize DB on module load
 database.init_db()
 
+# Load Dashboard HTML safely
+def get_dashboard_html() -> str:
+    possible_paths = [
+        BASE_DIR / "templates" / "index.html",
+        Path("templates/index.html"),
+        Path("/var/task/templates/index.html"),
+        Path(__file__).parent.parent / "templates" / "index.html"
+    ]
+    for p in possible_paths:
+        if p.exists():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
+    return "<h1>Admin Dashboard</h1><p>Template loading fallback.</p>"
+
 # --- WEB UI ROUTES ---
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return HTMLResponse(content=get_dashboard_html())
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
 @app.get("/api/webhook")
@@ -176,14 +192,17 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
 
 # --- REST API ENDPOINTS FOR DASHBOARD ---
 @app.get("/api/stats")
+@app.get("/stats")
 async def get_stats():
     return database.get_dashboard_stats()
 
 @app.get("/api/comments")
+@app.get("/comments")
 async def get_comments(limit: int = 50):
     return database.get_recent_comments(limit)
 
 @app.get("/api/rules")
+@app.get("/rules")
 async def get_rules():
     return database.get_post_rules()
 
@@ -198,16 +217,19 @@ class PostRuleSchema(BaseModel):
     is_active: Optional[int] = 1
 
 @app.post("/api/rules")
+@app.post("/rules")
 async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
     return {"status": "ok", "rule_id": rule_id}
 
 @app.delete("/api/rules/{rule_id}")
+@app.delete("/rules/{rule_id}")
 async def delete_rule(rule_id: int):
     database.delete_post_rule(rule_id)
     return {"status": "ok"}
 
 @app.get("/api/leads")
+@app.get("/leads")
 async def get_leads(limit: int = 50):
     return database.get_leads(limit)
 
@@ -216,11 +238,13 @@ class LeadStatusSchema(BaseModel):
     notes: Optional[str] = ""
 
 @app.post("/api/leads/{lead_id}/status")
+@app.post("/leads/{lead_id}/status")
 async def update_lead(lead_id: int, payload: LeadStatusSchema):
     database.update_lead_status(lead_id, payload.status, payload.notes or "")
     return {"status": "ok"}
 
 @app.get("/api/leads/export-csv")
+@app.get("/leads/export-csv")
 async def export_leads_csv():
     leads = database.get_leads(limit=1000)
     output = io.StringIO()
@@ -237,10 +261,12 @@ async def export_leads_csv():
     )
 
 @app.get("/api/settings")
+@app.get("/settings")
 async def get_settings():
     return database.get_settings()
 
 @app.post("/api/settings")
+@app.post("/settings")
 async def update_settings(payload: Dict[str, Any]):
     database.update_settings(payload)
     return {"status": "ok"}
@@ -251,6 +277,7 @@ class SimulateRequest(BaseModel):
     comment_text: str
 
 @app.post("/api/simulate")
+@app.post("/simulate")
 async def test_simulate(payload: SimulateRequest):
     """
     Facebook холбох шаардлагагүйгээр Dashboard дээр шууд AI хариуг турших

@@ -20,12 +20,12 @@ DEFAULT_PAGES = [
     {
         "page_id": "1495236273664035",
         "page_name": "Nice Drama Ai",
-        "access_token": "EAAQAATUnWt0BTGZBe8lIxmLf91uPhKMMUl8lw4fIzlSo1kLmdddX3599IJsWg7dTcY5C38EMOnWZCNtQ8UGWu58D7zEMqLoM3dn1GRMFYM3TZBNUFkXpCUc3j4hTfr31ZCYhqsArNRdFmONuWBjxZAsrGjD9o2mxSShAWejGZACby5NwwpKxqp5KJXiJiek9E4HZAWFIbYgSKhg7RonZBkOc4P0u5AMZB2l5OtPOAnZAVLtcxzAetXYhszabwZD"
+        "access_token": "EAAQAATUnWt0BTAnCHq1G2hgIJSQsZBppbZAoJZAjkmgDy0O6yqc8JRmwX6EiyYzbOm4RWFS4hdYvFMJLSntqlZAImxUiTCeWDqLyBWIeGWqe29UZAF3hY4SPQ9l9E8EX6lXZAlCcFQR8ZBlqmM9qvTgBELKipuZCNFdjLFM2JU6It5Bwe65eI6fZCPZAVOMYHNF9zdXW1T2nMAFDpuFdBwHPDri0RO36kXqZCt63aog46kIxsZCLW8E4KrT2jLcB"
     },
     {
         "page_id": "1352524827955013",
         "page_name": "WOW Mini Drama",
-        "access_token": "EAAQAATUnWt0BTKWYZBwb8uvynZAtKi39VZC4KMpeeHkbRloXPQ0xrihhoy3DmguWbUqJxdQhHRsu1h4GZAdP0fILZCoriVP5LIScvS9PPvBOBXcwetwqpiNASZCvcs71ONEwV4USfnZBZCLwfuUxHoaayNOXmZBqyAs3l7mmwVnlmb5cIX3U3ALXOCFFP4wyixdqCZCTobk9hCB0riYTemBvOlVrflzVJQDIsqDow6DU2ZBg7KGYc4FIEKYY2gZD"
+        "access_token": "EAAQAATUnWt0BTAlZAr46mkxNKDTq7N8HgvHKMisBo1fYTuzWUVvK5LppzQFDNcQ0ovggExyJdRAIlIepGJ5DwFMklHmZB4iSZCoVTejgNwlaLXDS8J1mTgKvp60AwE0hJ9hrL1oBzm37sMxd0kgxnNv5qZBHx6CDmaT6G419WRDKl8rjfAZBkZAGBFXZBYr7HFjCWCQi1ZCZBuihGKfYltZAJJF158DZB1hk8cOFRj7weg4I4lEvApRXQwHawhEG2UG"
     }
 ]
 
@@ -210,8 +210,8 @@ def save_post_rule(rule: Dict[str, Any]) -> int:
     cursor = conn.cursor()
     if rule.get("id"):
         cursor.execute("""
-        UPDATE post_rules 
-        SET post_id = ?, post_name = ?, keywords = ?, public_reply_template = ?, 
+        UPDATE post_rules
+        SET post_id = ?, post_name = ?, keywords = ?, public_reply_template = ?,
             private_reply_template = ?, use_ai = ?, is_active = ?
         WHERE id = ?
         """, (
@@ -247,7 +247,7 @@ def log_comment(comment_id: str, post_id: str, sender_id: str, sender_name: str,
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT OR REPLACE INTO comments_log 
+    INSERT OR REPLACE INTO comments_log
     (comment_id, post_id, sender_id, sender_name, comment_text, sentiment, intent, public_reply, private_reply, phone_extracted)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (comment_id, post_id, sender_id, sender_name, comment_text, sentiment, intent, public_reply, private_reply, phone))
@@ -295,7 +295,7 @@ def update_lead_status(lead_id: int, status: str, notes: str = ""):
 def get_dashboard_stats() -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT COUNT(*) FROM comments_log")
     total_comments = cursor.fetchone()[0]
 

@@ -15,7 +15,7 @@ DEFAULT_PAGES = [
     {
         "page_id": "2159494444293875",
         "page_name": "Huree Kino www.huree.site",
-        "access_token": "EAAQAATUnWt0BTCpcBEbr8O09ZBV22TrHfwnZB9JKNZAM3YGaSbsGhc8a8RFiVNJHTN503wHKlT24NlqZAywwlzaTSnCKItZB6FR6n7B1CsqHx8lIwDfQisKL2Mhdm8qAa9mcYsjHGorAkrRg9IQ22oEcMx8LcMBZB52tfrwUN78A7LMfFtQrdL2CzxPmkkUdxcQuZANHEeM5ed7gUBqf5ZAz01ZBckV6pwbZBSrsqjCoey2bMIV8VQ4fNWmOgZD"
+        "access_token": "EAAQAATUnWt0BTFzgvAuylCm3NvvQ0rxfZClOAFvoa6PbgBPn9WvNdtgfg1GL9v2PQlueAOy0Up1wxcbZCmU7qKpLTqCMX3hZAPzfLAivTv1mVrKsaGij5DllaZBnm1e5SnX1y5vW2sKn9LAxWQjpiDAV6a83ylOdZC1PgD28m6CZBMI0wWi28as9HR7aBsZCoRCSvNsaGh4vqgRs4gwDh3qFZBoNZCu3dqDEbmfCCmTSggAAy7ZAT3Me9p2yKbfAoZD"
     },
     {
         "page_id": "1495236273664035",

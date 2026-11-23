@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Comment AI Bot & CRM Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
+            fb: '#1877F2'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <i class="fa-brands fa-facebook-messenger text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">Meta Comment AI Bot</h1>
+          <p class="text-xs text-slate-500">Автомат коммент хариулагч & CRM систем</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+          <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Систем Идэвхтэй
+        </span>
+        <button onclick="refreshData()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="Шинэчлэх">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container with Tabs -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    
+    <!-- Tab Navigation -->
+    <div class="flex border-b border-slate-200 mb-8 space-x-2 sm:space-x-8 overflow-x-auto">
+      <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600 flex items-center gap-2">
+        <i class="fa-solid fa-chart-pie"></i> Хяналтын самбар
+      </button>
+      <button onclick="switchTab('rules')" id="tab-btn-rules" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-sliders"></i> Постын тохиргоо
+      </button>
+      <button onclick="switchTab('leads')" id="tab-btn-leads" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-address-book"></i> Захиалга & Утас (<span id="leads-count-badge">0</span>)
+      </button>
+      <button onclick="switchTab('simulator')" id="tab-btn-simulator" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-vial-circle-check"></i> AI Тест Симулятор
+      </button>
+      <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-gear"></i> Систем & AI Тохиргоо
+      </button>
+    </div>
+
+    <!-- TAB 1: ANALYTICS & LOGS -->
+    <div id="tab-analytics" class="tab-content space-y-8">
+      <!-- Stat Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Нийт коммент</p>
+            <h3 id="stat-total-comments" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+            <i class="fa-regular fa-comments"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Илгээсэн хариу</p>
+            <h3 id="stat-replies-sent" class="text-3xl font-extrabold text-indigo-600 mt-1">0</h3>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Бүртгэсэн утасны дугаар</p>
+            <h3 id="stat-total-leads" class="text-3xl font-extrabold text-emerald-600 mt-1">0</h3>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-phone"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">AI амжилттай хариулт</p>
+            <h3 class="text-3xl font-extrabold text-amber-500 mt-1">99.8%</h3>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Comments Stream Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-base font-bold text-slate-800">Сүүлийн үеийн комментууд & AI шинжилгээ</h2>
+          <span class="text-xs text-slate-400">Шууд автоматаар хадгалагдана</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+              <tr>
+                <th class="px-6 py-3">Хэрэглэгч</th>
+                <th class="px-6 py-3">Коммент</th>
+                <th class="px-6 py-3">Шинжилгээ (Sentiment/Intent)</th>
+                <th class="px-6 py-3">Нийтийн хариу</th>
+                <th class="px-6 py-3">Messenger хариу</th>
+                <th class="px-6 py-3">Утас</th>
+                <th class="px-6 py-3">Огноо</th>
+              </tr>
+            </thead>
+            <tbody id="comments-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-slate-400">Одоогоор коммент бүртгэгдээгүй байна.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: POST RULES -->
+    <div id="tab-rules" class="tab-content hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Постын хариулах дүрмүүд</h2>
+          <p class="text-sm text-slate-500">Тодорхой постын ID-аар тусад нь тохируулах эсвэл бүх постод ерөнхий AI дүрэм заах</p>
+        </div>
+        <button onclick="openRuleModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-plus"></i> Шинэ дүрэм нэмэх
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="rules-cards-container">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 3: LEADS & CRM -->
+    <div id="tab-leads" class="tab-content hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Хэрэглэгчдийн утасны дугаар & захиалгууд</h2>
+          <p class="text-sm text-slate-500">AI коммент дотроос илрүүлсэн 8 оронтой Монгол дугааруудыг шууд энд бүртгэнэ</p>
+        </div>
+        <button onclick="exportLeadsCSV()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2">
+          <i class="fa-solid fa-file-export"></i> CSV татах
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+              <tr>
+                <th class="px-6 py-3">Хэрэглэгч</th>
+                <th class="px-6 py-3">Утасны дугаар</th>
+                <th class="px-6 py-3">Бичсэн коммент</th>
+                <th class="px-6 py-3">Төлөв</th>
+                <th class="px-6 py-3">Тэмдэглэл</th>
+                <th class="px-6 py-3">Огноо</th>
+                <th class="px-6 py-3 text-right">Үйлдэл</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-slate-400">Одоогоор утасны дугаар илрээгүй байна.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: AI TEST SIMULATOR -->
+    <div id="tab-simulator" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-3xl mx-auto">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-flask"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">AI Хариулт Турших Симулятор</h2>
+            <p class="text-xs text-slate-500">Facebook-ээс бодит коммент ирэхийг хүлээлгүй шууд энд коммент бичиж AI-г шалгана</p>
+          </div>
+        </div>
+
+        <form id="simulator-form" onsubmit="runSimulator(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Хэрэглэгчийн нэр</label>
+              <input type="text" id="sim-sender-name" value="Бат-Эрдэнэ" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Постын сэдэв / Бүтээгдэхүүн</label>
+              <input type="text" id="sim-post-name" value="Өвлийн дулаан хүрэм (Үнэ: 120,000₮)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Хэрэглэгчийн бичсэн коммент</label>
+            <textarea id="sim-comment-text" rows="3" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Жишээ: Энэ ямар үнэтэй вэ? 99112233 руу залгаад захиалга авч болох уу?"></textarea>
+          </div>
+
+          <button type="submit" id="sim-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Шинжилгээ хийж хариу үүсгэх
+          </button>
+        </form>
+
+        <!-- Simulation Result Box -->
+        <div id="sim-result" class="mt-6 pt-6 border-t border-slate-100 hidden space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Шинжилгээний үр дүн:</h3>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span class="text-xs text-slate-500 block">Sentiment:</span>
+              <span id="res-sentiment" class="font-bold text-slate-800 text-sm"></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span class="text-xs text-slate-500 block">Intent (Утга):</span>
+              <span id="res-intent" class="font-bold text-slate-800 text-sm"></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span class="text-xs text-slate-500 block">Илэрсэн утас:</span>
+              <span id="res-phone" class="font-bold text-emerald-600 text-sm"></span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Коммент доор нийтэд очих хариу:</label>
+            <div id="res-public-reply" class="bg-blue-50 border border-blue-100 text-blue-900 p-3.5 rounded-xl text-sm"></div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Хувийн Messenger чатаар очих зурвас:</label>
+            <div id="res-private-reply" class="bg-indigo-50 border border-indigo-100 text-indigo-900 p-3.5 rounded-xl text-sm whitespace-pre-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: SETTINGS -->
+    <div id="tab-settings" class="tab-content hidden max-w-3xl mx-auto space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Meta Facebook & AI Тохиргоо</h2>
+          <p class="text-xs text-slate-500">Эдгээр тохиргоонууд сервер дээр найдвартай хадгалагдана</p>
+        </div>
+
+        <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4">
+          <!-- Gemini API Key -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Google Gemini API Key</label>
+            <div class="relative">
+              <input type="password" id="set-gemini-key" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="AIzaSy...">
+              <button type="button" onclick="togglePasswordVisibility('set-gemini-key')" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Google AI Studio-оос үнэгүй авч болно (aistudio.google.com)</p>
+          </div>
+
+          <!-- System Prompt -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">AI-ийн Зан төлөв & Системийн Заавар (Prompt)</label>
+            <textarea id="set-system-prompt" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"></textarea>
+          </div>
+
+          <div class="border-t border-slate-100 pt-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Facebook Graph API Тохиргоо</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Page Access Token</label>
+                <input type="password" id="set-page-token" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="EAAG...">
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Verify Token (Таны зохиосон нууц үг)</label>
+                  <input type="text" id="set-verify-token" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">App Secret</label>
+                  <input type="password" id="set-app-secret" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Webhook URLs help box -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+            <span class="text-xs font-semibold text-slate-700 block">Таны Meta Webhook URL:</span>
+            <div class="flex items-center gap-2">
+              <code id="webhook-url-display" class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-indigo-600 font-mono flex-1 truncate"></code>
+              <button type="button" onclick="copyWebhookUrl()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-medium text-slate-700 transition">Хуулах</button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition shadow-sm">
+            Тохиргоог хадгалах
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal for Creating/Editing Post Rule -->
+  <div id="rule-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-900" id="modal-title">Постын дүрэм тохируулах</h3>
+        <button onclick="closeRuleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="rule-form" onsubmit="saveRule(event)" class="space-y-3">
+        <input type="hidden" id="rule-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Постын Нэр / Тайлбар</label>
+          <input type="text" id="rule-post-name" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" placeholder="Жишээ: Шинэ загварын пүүз">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Facebook Post ID (Бүх постод бол: default_all гэж үлдээнэ)</label>
+          <input type="text" id="rule-post-id" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono" placeholder="default_all">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Түлхүүр үгс (Таслалаар зааглана)</label>
+          <input type="text" id="rule-keywords" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" placeholder="үнэ,хэд,захиалах,хүргэлт">
+        </div>
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="rule-use-ai" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+          <label for="rule-use-ai" class="text-xs font-medium text-slate-700">Gemini AI ашиглан байгалийн хариу үүсгэх</label>
+        </div>
+        <div class="flex justify-end space-x-2 pt-3">
+          <button type="button" onclick="closeRuleModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium">Болих</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium">Хадгалах</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <i class="fa-solid fa-check text-emerald-400"></i>
+    <span id="toast-message">Амжилттай хадгалагдлаа</span>
+  </div>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'text-indigo-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
+      });
+
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      activeBtn.classList.remove('border-transparent', 'text-slate-500');
+      activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Load initial data
+    async function refreshData() {
+      await Promise.all([loadStats(), loadComments(), loadRules(), loadLeads(), loadSettings()]);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('stat-total-comments').innerText = data.total_comments;
+        document.getElementById('stat-replies-sent').innerText = data.replies_sent;
+        document.getElementById('stat-total-leads').innerText = data.total_leads;
+        document.getElementById('leads-count-badge').innerText = data.total_leads;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadComments() {
+      try {
+        const res = await fetch('/api/comments');
+        const list = await res.json();
+        const tbody = document.getElementById('comments-table-body');
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">Одоогоор коммент бүртгэгдээгүй байна.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(c => `
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 font-medium text-slate-900">${c.sender_name || 'Хэрэглэгч'}</td>
+            <td class="px-6 py-4 max-w-xs truncate" title="${c.comment_text}">${c.comment_text}</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c.sentiment === 'positive' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'} mr-1">
+                ${c.sentiment || 'neutral'}
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                ${c.intent || 'general'}
+              </span>
+            </td>
+            <td class="px-6 py-4 max-w-xs truncate text-xs text-slate-500" title="${c.public_reply}">${c.public_reply || '-'}</td>
+            <td class="px-6 py-4 max-w-xs truncate text-xs text-slate-500" title="${c.private_reply}">${c.private_reply || '-'}</td>
+            <td class="px-6 py-4 font-mono font-medium text-emerald-600">${c.phone_extracted || '-'}</td>
+            <td class="px-6 py-4 text-xs text-slate-400">${c.created_at}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadRules() {
+      try {
+        const res = await fetch('/api/rules');
+        const list = await res.json();
+        const container = document.getElementById('rules-cards-container');
+        container.innerHTML = list.map(r => `
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-slate-800">${r.post_name}</h3>
+              <span class="px-2 py-0.5 text-xs rounded-full font-medium ${r.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+                ${r.is_active ? 'Идэвхтэй' : 'Идэвхгүй'}
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 font-mono">ID: ${r.post_id}</p>
+            <div class="text-xs text-slate-600 space-y-1">
+              <div><span class="font-medium text-slate-700">Түлхүүр үгс:</span> ${r.keywords || 'Бүх коммент'}</div>
+              <div><span class="font-medium text-slate-700">AI горим:</span> ${r.use_ai ? 'Асаалттай (Gemini)' : 'Унтраалттай'}</div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-end space-x-2">
+              <button onclick="editRule(${JSON.stringify(r).replace(/"/g, '&quot;')})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1">Засах</button>
+              ${r.post_id !== 'default_all' ? `<button onclick="deleteRule(${r.id})" class="text-xs text-rose-500 hover:text-rose-700 font-medium px-2 py-1">Устгах</button>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadLeads() {
+      try {
+        const res = await fetch('/api/leads');
+        const list = await res.json();
+        const tbody = document.getElementById('leads-table-body');
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">Одоогоор утасны дугаар бүртгэгдээгүй байна.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(l => `
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 font-medium text-slate-900">${l.sender_name || 'Үйлчлүүлэгч'}</td>
+            <td class="px-6 py-4 font-mono font-bold text-emerald-600 text-base">
+              <a href="tel:${l.phone_number}" class="hover:underline flex items-center gap-1.5">
+                <i class="fa-solid fa-phone text-xs"></i> ${l.phone_number}
+              </a>
+            </td>
+            <td class="px-6 py-4 max-w-xs truncate text-xs text-slate-600" title="${l.comment_text}">${l.comment_text}</td>
+            <td class="px-6 py-4">
+              <select onchange="updateLead(${l.id}, this.value)" class="text-xs font-medium rounded-lg border-slate-200 py-1 px-2 ${l.status === 'ordered' ? 'bg-emerald-50 text-emerald-800' : l.status === 'contacted' ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-800'}">
+                <option value="new" ${l.status === 'new' ? 'selected' : ''}>Шинэ</option>
+                <option value="contacted" ${l.status === 'contacted' ? 'selected' : ''}>Холбогдсон</option>
+                <option value="ordered" ${l.status === 'ordered' ? 'selected' : ''}>Захиалга өгсөн</option>
+                <option value="cancelled" ${l.status === 'cancelled' ? 'selected' : ''}>Цуцалсан</option>
+              </select>
+            </td>
+            <td class="px-6 py-4 text-xs text-slate-500">${l.notes || '-'}</td>
+            <td class="px-6 py-4 text-xs text-slate-400">${l.created_at}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="tel:${l.phone_number}" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
+                Залгах
+              </a>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const s = await res.json();
+        document.getElementById('set-gemini-key').value = s.gemini_api_key || '';
+        document.getElementById('set-system-prompt').value = s.system_prompt || '';
+        document.getElementById('set-page-token').value = s.fb_page_access_token || '';
+        document.getElementById('set-verify-token').value = s.fb_verify_token || '';
+        document.getElementById('set-app-secret').value = s.fb_app_secret || '';
+
+        const currentOrigin = window.location.origin;
+        document.getElementById('webhook-url-display').innerText = `${currentOrigin}/api/webhook`;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function saveSettings(e) {
+      e.preventDefault();
+      const payload = {
+        gemini_api_key: document.getElementById('set-gemini-key').value,
+        system_prompt: document.getElementById('set-system-prompt').value,
+        fb_page_access_token: document.getElementById('set-page-token').value,
+        fb_verify_token: document.getElementById('set-verify-token').value,
+        fb_app_secret: document.getElementById('set-app-secret').value
+      };
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showToast('Тохиргоо амжилттай хадгалагдлаа');
+    }
+
+    async function runSimulator(e) {
+      e.preventDefault();
+      const btn = document.getElementById('sim-btn');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> AI боловсруулж байна...`;
+
+      const payload = {
+        sender_name: document.getElementById('sim-sender-name').value,
+        post_name: document.getElementById('sim-post-name').value,
+        comment_text: document.getElementById('sim-comment-text').value
+      };
+
+      try {
+        const res = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        document.getElementById('res-sentiment').innerText = data.sentiment;
+        document.getElementById('res-intent').innerText = data.intent;
+        document.getElementById('res-phone').innerText = data.phone || 'Илрээгүй';
+        document.getElementById('res-public-reply').innerText = data.public_reply;
+        document.getElementById('res-private-reply').innerText = data.private_reply;
+
+        document.getElementById('sim-result').classList.remove('hidden');
+        showToast('AI амжилттай шинжилж хариулт үүсгэлээ');
+        refreshData();
+      } catch (err) {
+        alert('Алдаа гарлаа: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> AI Шинжилгээ хийж хариу үүсгэх`;
+      }
+    }
+
+    function openRuleModal() {
+      document.getElementById('rule-id').value = '';
+      document.getElementById('rule-form').reset();
+      document.getElementById('rule-post-id').value = 'default_all';
+      document.getElementById('rule-use-ai').checked = true;
+      document.getElementById('modal-title').innerText = 'Шинэ постын дүрэм нэмэх';
+      document.getElementById('rule-modal').classList.remove('hidden');
+    }
+
+    function closeRuleModal() {
+      document.getElementById('rule-modal').classList.add('hidden');
+    }
+
+    function editRule(r) {
+      document.getElementById('rule-id').value = r.id;
+      document.getElementById('rule-post-name').value = r.post_name;
+      document.getElementById('rule-post-id').value = r.post_id;
+      document.getElementById('rule-keywords').value = r.keywords || '';
+      document.getElementById('rule-use-ai').checked = !!r.use_ai;
+      document.getElementById('modal-title').innerText = 'Постын дүрэм засах';
+      document.getElementById('rule-modal').classList.remove('hidden');
+    }
+
+    async function saveRule(e) {
+      e.preventDefault();
+      const id = document.getElementById('rule-id').value;
+      const payload = {
+        id: id ? parseInt(id) : null,
+        post_name: document.getElementById('rule-post-name').value,
+        post_id: document.getElementById('rule-post-id').value,
+        keywords: document.getElementById('rule-keywords').value,
+        use_ai: document.getElementById('rule-use-ai').checked ? 1 : 0,
+        is_active: 1
+      };
+
+      await fetch('/api/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      closeRuleModal();
+      showToast('Постын дүрэм хадгалагдлаа');
+      loadRules();
+    }
+
+    async function deleteRule(id) {
+      if (!confirm('Энэ дүрмийг устгах уу?')) return;
+      await fetch(`/api/rules/${id}`, { method: 'DELETE' });
+      showToast('Дүрэм устгагдлаа');
+      loadRules();
+    }
+
+    async function updateLead(id, status) {
+      await fetch(`/api/leads/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      showToast('Төлөв шинэчлэгдлээ');
+    }
+
+    function togglePasswordVisibility(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function copyWebhookUrl() {
+      const url = document.getElementById('webhook-url-display').innerText;
+      navigator.clipboard.writeText(url);
+      showToast('Webhook URL хуулагдлаа');
+    }
+
+    function exportLeadsCSV() {
+      window.location.href = '/api/leads/export-csv';
+    }
+
+    // Init
+    window.addEventListener('DOMContentLoaded', refreshData);
+  </script>
+</body>
+</html>

@@ -124,8 +124,8 @@ def init_db():
     # Default settings with Huree.site details
     default_settings = {
         "ai_provider": "gemini",
-        "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
-        "gemini_model": "gemini-1.5-flash",
+        "gemini_api_key": os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6K6ZUU9JlJKaq5ZH9rrwDHPCSJVpkKUO1Age7_-Utz--Q"),
+        "gemini_model": "gemini-3.5-flash-lite",
         "system_prompt": (
             "Та 'Хүрээ Кино' (https://www.huree.site), 'Nice Drama Ai', 'WOW Mini Drama' хуудсуудын найрсаг онлайн туслах юм.\n"
             "Үндсэн мэдээлэл:\n"

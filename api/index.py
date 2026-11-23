@@ -56,6 +56,21 @@ def get_dashboard_html() -> str:
 async def admin_dashboard(request: Request):
     return HTMLResponse(content=get_dashboard_html())
 
+@app.get("/privacy", response_class=HTMLResponse)
+@app.get("/terms", response_class=HTMLResponse)
+async def privacy_policy():
+    possible_paths = [
+        BASE_DIR / "templates" / "privacy.html",
+        Path("templates/privacy.html"),
+        Path("/var/task/templates/privacy.html"),
+        Path(__file__).parent.parent / "templates" / "privacy.html"
+    ]
+    for p in possible_paths:
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
+
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
 @app.get("/api/webhook")
 @app.get("/webhook")

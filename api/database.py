@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -8,6 +9,25 @@ DB_FILE = os.environ.get("DB_FILE", "bot.db")
 # If running on Vercel serverless where root is read-only, fallback to /tmp
 if os.environ.get("VERCEL"):
     DB_FILE = "/tmp/bot.db"
+
+# Pre-configured 3 connected Facebook Pages
+DEFAULT_PAGES = [
+    {
+        "page_id": "2159494444293875",
+        "page_name": "Huree Kino www.huree.site",
+        "access_token": "EAAQAATUnWt0BTCpcBEbr8O09ZBV22TrHfwnZB9JKNZAM3YGaSbsGhc8a8RFiVNJHTN503wHKlT24NlqZAywwlzaTSnCKItZB6FR6n7B1CsqHx8lIwDfQisKL2Mhdm8qAa9mcYsjHGorAkrRg9IQ22oEcMx8LcMBZB52tfrwUN78A7LMfFtQrdL2CzxPmkkUdxcQuZANHEeM5ed7gUBqf5ZAz01ZBckV6pwbZBSrsqjCoey2bMIV8VQ4fNWmOgZD"
+    },
+    {
+        "page_id": "1495236273664035",
+        "page_name": "Nice Drama Ai",
+        "access_token": "EAAQAATUnWt0BTGZBe8lIxmLf91uPhKMMUl8lw4fIzlSo1kLmdddX3599IJsWg7dTcY5C38EMOnWZCNtQ8UGWu58D7zEMqLoM3dn1GRMFYM3TZBNUFkXpCUc3j4hTfr31ZCYhqsArNRdFmONuWBjxZAsrGjD9o2mxSShAWejGZACby5NwwpKxqp5KJXiJiek9E4HZAWFIbYgSKhg7RonZBkOc4P0u5AMZB2l5OtPOAnZAVLtcxzAetXYhszabwZD"
+    },
+    {
+        "page_id": "1352524827955013",
+        "page_name": "WOW Mini Drama",
+        "access_token": "EAAQAATUnWt0BTKWYZBwb8uvynZAtKi39VZC4KMpeeHkbRloXPQ0xrihhoy3DmguWbUqJxdQhHRsu1h4GZAdP0fILZCoriVP5LIScvS9PPvBOBXcwetwqpiNASZCvcs71ONEwV4USfnZBZCLwfuUxHoaayNOXmZBqyAs3l7mmwVnlmb5cIX3U3ALXOCFFP4wyixdqCZCTobk9hCB0riYTemBvOlVrflzVJQDIsqDow6DU2ZBg7KGYc4FIEKYY2gZD"
+    }
+]
 
 def get_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -18,7 +38,25 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 1. Post Configurations
+    # 1. Connected Facebook Pages Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS connected_pages (
+        page_id TEXT PRIMARY KEY,
+        page_name TEXT NOT NULL,
+        access_token TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # Populate 3 default pages
+    for p in DEFAULT_PAGES:
+        cursor.execute("""
+        INSERT OR REPLACE INTO connected_pages (page_id, page_name, access_token, is_active)
+        VALUES (?, ?, ?, 1)
+        """, (p["page_id"], p["page_name"], p["access_token"]))
+
+    # 2. Post Configurations
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS post_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +71,7 @@ def init_db():
     );
     """)
 
-    # 2. Comments Log & Analysis
+    # 3. Comments Log & Analysis
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS comments_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +89,7 @@ def init_db():
     );
     """)
 
-    # 3. Captured Leads & Phone Numbers
+    # 4. Captured Leads & Phone Numbers
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS leads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +103,7 @@ def init_db():
     );
     """)
 
-    # 4. Bot & AI Settings
+    # 5. Bot & AI Settings
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS system_settings (
         key TEXT PRIMARY KEY,
@@ -73,22 +111,22 @@ def init_db():
     );
     """)
 
-    # Default settings if not exists
+    # Default settings
     default_settings = {
         "ai_provider": "gemini",
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
         "gemini_model": "gemini-1.5-flash",
         "system_prompt": (
-            "Та Facebook хуудасны найрсаг, мэргэжлийн борлуулалтын зөвлөх туслах юм. "
-            "Хэрэглэгчийн бичсэн комментыг ойлгож, монгол хэлээр эелдэг, дулаан өнгө аясаар хариулна. "
-            "Хэрэв үнэ болон дэлгэрэнгүй асуусан бол хувийн чатаар мэдээлэл илгээсэн болохыг хэлж, чатаа шалгахыг хүснэ. "
-            "Комментоос утасны дугаар илэрвэл талархаж, тун удахгүй холбогдоно гэдгээ мэдэгдэнэ."
+            "Та кино болон драма контент сонирхогчдод зориулсан Facebook хуудасны найрсаг, сонирхолтой туслах зөвлөх юм. "
+            "Хэрэглэгчийн бичсэн комментыг ойлгож, монгол хэлээр эелдэг, найрсаг хариулна. "
+            "Хэрэв кино үзэх линк, ангийн үргэлжлэл, үнэ болон дэлгэрэнгүй асуусан бол хувийн Messenger чатаар нь мэдээллийг илгээсэн болохыг хэлж, чатаа шалгахыг хүснэ. "
+            "Хэрэглэгч утасны дугаараа үлдээвэл баярлалаа гэдгээ илэрхийлж, тун удахгүй холбогдоно гэдгээ мэдэгдэнэ."
         ),
-        "fb_page_access_token": os.environ.get("PAGE_ACCESS_TOKEN", ""),
+        "fb_page_access_token": DEFAULT_PAGES[0]["access_token"],
         "fb_verify_token": os.environ.get("VERIFY_TOKEN", "fb_chatbot_secret_verify_token"),
-        "fb_app_secret": os.environ.get("APP_SECRET", ""),
-        "default_public_reply": "Сайн байна уу! Танд дэлгэрэнгүй мэдээллийг чатаар илгээлээ. Та чатаа шалгаарай 😊",
-        "default_private_reply": "Сайн байна уу! Манай хуудсыг сонирхсонд баярлалаа. Танд ямар чиглэлээр туслах вэ?"
+        "fb_app_secret": os.environ.get("APP_SECRET", "1125905093581533"),
+        "default_public_reply": "Сайн байна уу! Танд дэлгэрэнгүй мэдээллийг хувийн чатаар илгээлээ. Та чатаа шалгаарай 😊🍿",
+        "default_private_reply": "Сайн байна уу! Манай хуудсыг сонирхсонд баярлалаа. Та дараагийн анги болон киноны дэлгэрэнгүйг сонирхож байна уу?"
     }
 
     for k, v in default_settings.items():
@@ -99,11 +137,36 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         cursor.execute("""
         INSERT INTO post_rules (post_id, post_name, keywords, public_reply_template, private_reply_template, use_ai, is_active)
-        VALUES ('default_all', 'Бүх нийтийн анхдагч тохиргоо (Бүх постын коммент)', 'үнэ,хэд,хүргэлт,захиалах,хаана', '', '', 1, 1)
+        VALUES ('default_all', 'Бүх хуудас & постын анхдагч тохиргоо', 'үргэлжлэл,хэд,үнэ,үзэх,линк,хаана', '', '', 1, 1)
         """)
 
     conn.commit()
     conn.close()
+
+# Page token lookup
+def get_page_token(page_id: str) -> Optional[str]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT access_token FROM connected_pages WHERE page_id = ? AND is_active = 1", (page_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row["access_token"]
+    # Fallback to default in-memory list or system settings
+    for p in DEFAULT_PAGES:
+        if p["page_id"] == page_id:
+            return p["access_token"]
+    return get_settings().get("fb_page_access_token", "")
+
+def get_connected_pages() -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM connected_pages ORDER BY created_at ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows:
+        return DEFAULT_PAGES
+    return [dict(row) for row in rows]
 
 # Helper queries
 def get_settings() -> Dict[str, str]:
@@ -239,5 +302,6 @@ def get_dashboard_stats() -> Dict[str, Any]:
         "total_comments": total_comments,
         "total_leads": total_leads,
         "replies_sent": replies_sent,
-        "sentiments": sentiments
+        "sentiments": sentiments,
+        "connected_pages_count": len(DEFAULT_PAGES)
     }

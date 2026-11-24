@@ -30,17 +30,17 @@ DEFAULT_PAGES = [
     {
         "page_id": "1508100029049981",
         "page_name": "Tenger Drama mongolia",
-        "access_token": "EAAQEwsLb8KUBTDlbWJGBk6oakYPdQRtPxkdjoaFOGXo62kzHy6vVN1kJjTdTC54O1IK507SYK7D38jUejZAdemmXYMO5egLAGu5rf1o2mTFUPPREoDXQhbyNFaLOFvr1JHqM2f6chVBEbadVbIRe6Tzq7H5MpZAhj242FkvcoR2lPFEJEfP1qbQXg0AvGCHwtq1ZAcjTo8ELmhiZCTAvNsBs"
+        "access_token": "EAAQEwsLb8KUBTOZAwmUAOR369pmPunj344uvXFBV0TjqjqwGw8WxgJkMN9QQylfvVcZBBZBdDZBDs2wATf2JgHdZC1U410vJkfH4dRkuKTyPtq35benVbt6urO23XZBVBrU3j6ZBGaVFYpkwTYDjXtydFdpfgZAQdF9nVBbWdYZACIHOJuX6vapMiNDXufAcef664q3ZC9SrotjH3dJo7X6i82MzahLltVJxdat5AdDZAgURJkUjwYZBzy6nPNYnTw4ZD"
     },
     {
         "page_id": "1391701170699267",
         "page_name": "Lolo Drama",
-        "access_token": "EAAQEwsLb8KUBTCWkaifeUjT8pbkRXZB2d9odzb63fLm0XgOf7wxgxbK0HV4PXtwc9M6h5vZCZBZCSGmsCoto5Yj4x9BLZAj9nSPR9ZASGZAbI1NfedyGHoLqI9Kw0p6JiEmIE6OBoDxhjAZC0uM1JA36yjZCTd4ioKMT0mMhvBZBnpqhrUfByye1JhmlXNaUZA5reOB5xsfAV1VZBTCAFYtxZAa5Q0pyX"
+        "access_token": "EAAQEwsLb8KUBTLWZB1UW5DwCZC3VhTiJ6nXaJ7KyoNg5KBK8kMnWrDD7awOmZC9n8otn6tcUapbOsmlyItCjPOqPGZB8ZByKQxRfWdZA3uTQMYAcEvAfguPGqB78fi4DjVEqAToScRE5XEunAWkzRL0vZBzLRrvJF0i4nM74tKxo6UCauhCwS0Ev3qgBUXVpLrPEY5am968h7CboPZCwyomKCFGCGN98spgXNFHdWPNr3RYycJiS9dwXjSiHlMgZD"
     },
     {
         "page_id": "849736974891001",
         "page_name": "Dornod Ai",
-        "access_token": "EAAQEwsLb8KUBTIBXbTs2bP28qnL1oEBtiZCFuE8gGpZAMBM1ysnPwSW64tDit889YGSAeaqbUSJ7DtuEDyF02SaBKRRp6Kpl8p7dg0EfkcdhxqBXVRGYvSzJeay1HLkZCuzeda6j2FDt5C122oduwsr6up8K4HTXNYfZCwpRULuMWvChMqfdYaRZCBJffoZBjx0axMw2JOwlJZBCE8gHe3AZAeQW"
+        "access_token": "EAAQEwsLb8KUBTLFAC1GqT4tOZA2QZCAKmz2dGNkpffHOKVFXN4hecBLzuZCLPwbMQZBTf8l1rIKneUO8FpOleTHburT1dCCTzjwcRy1XVbSIwMcu1s5AjnTSpMrMP4JOZC2uY9ct6FUFtnbXgCzHsAZBEG1b3yPUhQi2gXOCaBfSSzGldQ4edWQJwRjUbAv0Klwmko6UyXjv9TbaAon829OBoZAb1wDpkUWISfK1UwrytU7qGdyk2KW88JUymgZD"
     }
 ]
 

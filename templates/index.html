@@ -996,29 +996,39 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     async function loadPublisherGroups() {
       try {
         const res = await fetch('/api/groups');
         const groups = await res.json();
-        const container = document.getElementById('pub-groups-list');
-        if (!container) return;
+        const tbody = document.getElementById('groups-table-body');
+        if (!tbody) return;
         if (!groups || groups.length === 0) {
-          container.innerHTML = '<p class="text-sm text-slate-400">Групп олдсонгүй</p>';
+          tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-xs text-slate-400">Одоогоор зорилтот групп бүртгэгдээгүй байна</td></tr>';
           return;
         }
-        container.innerHTML = groups.map(g => `
-          <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
-            <div class="flex-1 truncate">
-              <span class="text-sm font-semibold text-slate-800">${g.group_name}</span>
-              <p class="text-xs text-slate-500">${g.category || 'Групп'}</p>
-            </div>
-            <a href="${g.group_url}" target="_blank" class="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md">
-              <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Нээх
-            </a>
-          </div>
+        tbody.innerHTML = groups.map(g => `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-3 text-xs font-semibold text-slate-800">${escapeHtml(g.group_name || 'Нэргүй')}</td>
+            <td class="p-3 text-xs text-slate-500"><span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600 font-medium">${escapeHtml(g.category || 'Кино')}</span></td>
+            <td class="p-3 text-xs text-blue-600 truncate max-w-xs"><a href="${escapeHtml(g.group_url)}" target="_blank" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ${escapeHtml(g.group_url)}</a></td>
+            <td class="p-3 text-right space-x-1">
+              <a href="${escapeHtml(g.group_url)}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium rounded-lg transition"><i class="fa-solid fa-share"></i> Нээх</a>
+              <button type="button" onclick="deleteGroup(${g.id})" class="inline-flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:bg-red-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
+            </td>
+          </tr>
         `).join('');
       } catch (e) {
-        console.error(e);
+        console.error('Error loading groups:', e);
       }
     }
     const loadGroups = loadPublisherGroups;
@@ -1027,25 +1037,26 @@
       try {
         const res = await fetch('/api/published-posts');
         const posts = await res.json();
-        const tbody = document.getElementById('published-posts-table');
+        const tbody = document.getElementById('published-posts-tbody');
         if (!tbody) return;
         if (!posts || posts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Нийтлэгдсэн пост одоогоор алга байна</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-xs text-slate-400">Нийтлэгдсэн пост одоогоор алга байна</td></tr>';
           return;
         }
         tbody.innerHTML = posts.map(item => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="px-6 py-4 text-sm font-medium text-slate-900">${item.page_name || item.page_id}</td>
-            <td class="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">${item.message || '-'}</td>
-            <td class="px-6 py-4 text-sm text-slate-500 font-mono text-xs">${item.fb_post_id}</td>
-            <td class="px-6 py-4 text-sm text-slate-500">${item.published_at || item.created_at || ''}</td>
-            <td class="px-6 py-4 text-sm">
-              ${item.post_url ? `<a href="${item.post_url}" target="_blank" class="text-blue-600 hover:underline">Үзэх</a>` : '-'}
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-3 text-xs text-slate-500 whitespace-nowrap">${item.created_at ? new Date(item.created_at).toLocaleString('mn-MN') : '-'}</td>
+            <td class="p-3 text-xs font-semibold text-slate-800">${escapeHtml(item.page_name || item.page_id)}</td>
+            <td class="p-3 text-xs text-slate-600"><span class="px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(item.media_type || 'status')}</span></td>
+            <td class="p-3 text-xs text-slate-700 max-w-sm truncate" title="${escapeHtml(item.message || '')}">${escapeHtml(item.message || '-')}</td>
+            <td class="p-3 text-xs text-slate-500"><span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">${escapeHtml(item.preset_type || 'none')}</span></td>
+            <td class="p-3 text-right">
+              ${item.post_id ? `<a href="https://facebook.com/${item.post_id}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 font-medium rounded-lg"><i class="fa-solid fa-arrow-up-right-from-square"></i> Үзэх</a>` : '-'}
             </td>
           </tr>
         `).join('');
       } catch (e) {
-        console.error(e);
+        console.error('Error loading published posts:', e);
       }
     }
 

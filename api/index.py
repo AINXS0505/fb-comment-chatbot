@@ -70,11 +70,8 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    return HTMLResponse(content=f.read())
-            except Exception:
-                pass
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
@@ -216,6 +213,7 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 if database.is_comment_processed(comment_id):
                     print(f"[Skip already processed comment]: {comment_id}")
                     continue
+
                 print(f"[Processing Comment]: Page: {page_id}, CommentID: {comment_id}, User: {sender_name}, Text: {comment_text}")
 
                 # AI шинжилгээ болон утасны дугаар шалгах
@@ -300,7 +298,6 @@ class PostRuleSchema(BaseModel):
 async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
     return {"status": "ok", "rule_id": rule_id}
-
 @app.delete("/api/rules/{rule_id}")
 @app.delete("/rules/{rule_id}")
 async def delete_rule(rule_id: int):
@@ -448,6 +445,7 @@ async def execute_mobile_command(
 
     if set_public_reply:
         updates["default_public_reply"] = set_public_reply
+
     if set_price_single or set_price_all or set_link:
         link = set_link or "https://www.huree.site"
         p_single = set_price_single or "3,900₮"
@@ -677,6 +675,7 @@ async def start_video_upload_endpoint(payload: VideoUploadStartRequest):
             }
         else:
             raise HTTPException(status_code=400, detail=data.get("error", {}).get("message", str(data)))
+
 class VideoUploadFinishRequest(BaseModel):
     primary_page_id: str
     upload_session_id: str
@@ -737,6 +736,21 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
         boost_command=payload.boost_preset or "standard"
     )
 
+    # Auto-create rule for primary post
+    settings = database.get_settings()
+    if payload.auto_create_rule:
+        pub_reply = payload.custom_public_reply or settings.get("default_public_reply", "Сайн байна уу! Чатаар дэлгэрэнгүй мэдээлэл болон үзэх линк илгээлээ.")
+        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
+        database.save_post_rule({
+            "post_id": payload.video_id,
+            "post_name": f"{pname} - Шинэ видео ({datetime.now().strftime('%m/%d %H:%M')})",
+            "keywords": "үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,сонирхож,байна,багц,qpay",
+            "public_reply_template": pub_reply,
+            "private_reply_template": priv_reply,
+            "use_ai": 1,
+            "is_active": 1
+        })
+
     results = [{
         "success": True,
         "page_id": pid,
@@ -745,25 +759,6 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
         "post_url": primary_post_url
     }]
 
-    # Poll source CDN URL from Facebook for instant replication
-    source_url = None
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        for _ in range(6):
-            await asyncio.sleep(3)
-            try:
-                chk = await client.get(
-                    f"https://graph.facebook.com/v21.0/{payload.video_id}",
-                    params={"fields": "source,status", "access_token": tok}
-                )
-                cdat = chk.json()
-                if cdat.get("source"):
-                    source_url = cdat["source"]
-                    break
-            except Exception:
-                pass
-
-    fallback_file_url = source_url or primary_post_url
-
     # Target pages filter
     target_ids = [str(x) for x in payload.target_page_ids]
     if "all" in target_ids:
@@ -771,44 +766,68 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
     else:
         remaining_pages = [p for p in all_pages if str(p["page_id"]) in target_ids and str(p["page_id"]) != pid]
 
-    for p in remaining_pages:
-        r_pid = str(p["page_id"])
-        r_name = p["page_name"]
-        r_tok = p["access_token"]
+    # Replicate instantly across all selected pages using Facebook Native Crossposting API (<1s per page, handles 500MB+)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for p in remaining_pages:
+            r_pid = str(p["page_id"])
+            r_name = p["page_name"]
+            r_tok = p["access_token"]
 
-        pub_res = await facebook_service.publish_post_to_page(
-            page_id=r_pid,
-            access_token=r_tok,
-            message=final_message,
-            media_type="video",
-            media_url=fallback_file_url
-        )
-        if pub_res.get("success"):
-            r_post_id = pub_res["post_id"]
-            r_post_url = pub_res["post_url"]
-            database.save_published_post(
-                page_id=r_pid,
-                page_name=r_name,
-                post_id=r_post_id,
-                post_url=r_post_url,
-                message=final_message,
-                media_type="video",
-                boost_command=payload.boost_preset or "standard"
-            )
-            results.append({
-                "success": True,
-                "page_id": r_pid,
-                "page_name": r_name,
-                "post_id": r_post_id,
-                "post_url": r_post_url
-            })
-        else:
-            results.append({
-                "success": False,
-                "page_id": r_pid,
-                "page_name": r_name,
-                "error": pub_res.get("error", "Failed to replicate")
-            })
+            r_post_id = None
+            err_msg = None
+
+            try:
+                cp_res = await client.post(
+                    f"https://graph.facebook.com/v21.0/{r_pid}/videos",
+                    data={
+                        "crossposted_video_id": payload.video_id,
+                        "description": final_message,
+                        "access_token": r_tok
+                    }
+                )
+                cp_data = cp_res.json()
+                if cp_res.status_code == 200 and ("id" in cp_data or "post_id" in cp_data):
+                    r_post_id = str(cp_data.get("post_id") or cp_data.get("id"))
+                else:
+                    err_msg = cp_data.get("error", {}).get("message", "Crosspost failed")
+            except Exception as e:
+                err_msg = str(e)
+
+            if r_post_id:
+                r_post_url = f"https://www.facebook.com/reel/{r_post_id}/"
+                database.save_published_post(
+                    page_id=r_pid,
+                    page_name=r_name,
+                    post_id=r_post_id,
+                    post_url=r_post_url,
+                    message=final_message,
+                    media_type="video",
+                    boost_command=payload.boost_preset or "standard"
+                )
+                if payload.auto_create_rule:
+                    database.save_post_rule({
+                        "post_id": r_post_id,
+                        "post_name": f"{r_name} - Шинэ видео ({datetime.now().strftime('%m/%d %H:%M')})",
+                        "keywords": "үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,сонирхож,байна,багц,qpay",
+                        "public_reply_template": pub_reply,
+                        "private_reply_template": priv_reply,
+                        "use_ai": 1,
+                        "is_active": 1
+                    })
+                results.append({
+                    "success": True,
+                    "page_id": r_pid,
+                    "page_name": r_name,
+                    "post_id": r_post_id,
+                    "post_url": r_post_url
+                })
+            else:
+                results.append({
+                    "success": False,
+                    "page_id": r_pid,
+                    "page_name": r_name,
+                    "error": err_msg or "Failed to replicate"
+                })
 
     groups = database.get_facebook_groups()
     group_shares = facebook_service.build_group_share_links(primary_post_url, final_message, groups)

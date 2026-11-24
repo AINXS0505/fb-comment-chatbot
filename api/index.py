@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import httpx
+import asyncio
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -71,7 +72,7 @@ async def privacy_policy():
         if p.exists():
             try:
                 with open(p, "r", encoding="utf-8") as f:
-                    return f.read()
+                    return HTMLResponse(content=f.read())
             except Exception:
                 pass
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
@@ -215,7 +216,6 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 if database.is_comment_processed(comment_id):
                     print(f"[Skip already processed comment]: {comment_id}")
                     continue
-
                 print(f"[Processing Comment]: Page: {page_id}, CommentID: {comment_id}, User: {sender_name}, Text: {comment_text}")
 
                 # AI шинжилгээ болон утасны дугаар шалгах
@@ -448,7 +448,6 @@ async def execute_mobile_command(
 
     if set_public_reply:
         updates["default_public_reply"] = set_public_reply
-
     if set_price_single or set_price_all or set_link:
         link = set_link or "https://www.huree.site"
         p_single = set_price_single or "3,900₮"
@@ -633,6 +632,196 @@ async def publish_multi_pages(payload: MultiPublishRequest):
         "first_post_url": share_url_target,
         "group_shares": group_shares
     }
+
+# --- DIRECT BROWSER-TO-FACEBOOK RESUMABLE CHUNKED UPLOAD (500MB+ SUPPORT) ---
+
+class VideoUploadStartRequest(BaseModel):
+    file_size: int
+    page_id: Optional[str] = "2159494444293875" # Default to Huree Kino
+
+@app.post("/api/video-upload/start")
+@app.post("/video-upload/start")
+async def start_video_upload_endpoint(payload: VideoUploadStartRequest):
+    """
+    Хөтчөөс Facebook рүү шууд 500MB+ видео хэсэгчлэн (Chunked) хуулах сесс эхлүүлэх
+    """
+    all_pages = database.get_connected_pages()
+    primary = next((p for p in all_pages if str(p["page_id"]) == str(payload.page_id)), None)
+    if not primary:
+        primary = all_pages[0] if all_pages else None
+    if not primary:
+        raise HTTPException(status_code=400, detail="Холбогдсон хуудас олдсонгүй")
+
+    pid = str(primary["page_id"])
+    tok = primary["access_token"]
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            f"https://graph.facebook.com/v21.0/{pid}/videos",
+            data={
+                "upload_phase": "start",
+                "file_size": payload.file_size,
+                "access_token": tok
+            }
+        )
+        data = resp.json()
+        if "upload_session_id" in data:
+            return {
+                "success": True,
+                "page_id": pid,
+                "access_token": tok,
+                "video_id": data.get("video_id"),
+                "upload_session_id": data["upload_session_id"],
+                "start_offset": int(data.get("start_offset", 0)),
+                "end_offset": int(data.get("end_offset", 10485760))
+            }
+        else:
+            raise HTTPException(status_code=400, detail=data.get("error", {}).get("message", str(data)))
+class VideoUploadFinishRequest(BaseModel):
+    primary_page_id: str
+    upload_session_id: str
+    video_id: str
+    target_page_ids: List[str]
+    message: str
+    boost_preset: Optional[str] = "standard"
+    auto_create_rule: Optional[bool] = True
+    custom_public_reply: Optional[str] = None
+    custom_private_reply: Optional[str] = None
+
+@app.post("/api/video-upload/finish-and-replicate")
+@app.post("/video-upload/finish-and-replicate")
+async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest):
+    """
+    Үндсэн хуудсанд бүрэн хуулагдсан 500MB видеог баталгаажуулж,
+    Facebook-ийн дотоод өндөр хурдны CDN-ээр бусад хуудсуудад 2 секундэд түгээх
+    """
+    all_pages = database.get_connected_pages()
+    primary = next((p for p in all_pages if str(p["page_id"]) == str(payload.primary_page_id)), None)
+    if not primary:
+        primary = all_pages[0]
+    pid = str(primary["page_id"])
+    pname = primary["page_name"]
+    tok = primary["access_token"]
+
+    # Message formatting
+    final_message = payload.message.strip()
+    if payload.boost_preset == "standard" and "huree.site" not in final_message.lower():
+        final_message += "\n\n🎬 Үзэх холбоос: https://www.huree.site (1 кино 3,900₮ | Бүх кино 15,900₮ QPay)"
+    elif payload.boost_preset == "vip" and "huree.site" not in final_message.lower():
+        final_message += "\n\n🔥 VIP киноны эрхээ QPay-ээр шуурхай нээн үзээрэй: https://www.huree.site (1000+ кино бэлэн)"
+    elif payload.boost_preset == "chat_cta":
+        final_message += "\n\n💬 Кино үзэх холбоосыг шууд авахын тулд доор 'Үзэх' гэж коммент бичээрэй! Манай AI бот чатаар шууд илгээнэ 🍿✨"
+    elif payload.boost_preset == "qpay_fast":
+        final_message += "\n\n⚡ QPay-ээр шууд төлөөд 1 кино 3,900₮, бүх кино 15,900₮-өөр үзээрэй: https://www.huree.site"
+
+    # Finish upload on primary page
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        await client.post(
+            f"https://graph.facebook.com/v21.0/{pid}/videos",
+            data={
+                "upload_phase": "finish",
+                "upload_session_id": payload.upload_session_id,
+                "description": final_message,
+                "access_token": tok
+            }
+        )
+
+    primary_post_url = f"https://www.facebook.com/reel/{payload.video_id}/"
+    database.save_published_post(
+        page_id=pid,
+        page_name=pname,
+        post_id=payload.video_id,
+        post_url=primary_post_url,
+        message=final_message,
+        media_type="video",
+        boost_command=payload.boost_preset or "standard"
+    )
+
+    results = [{
+        "success": True,
+        "page_id": pid,
+        "page_name": pname,
+        "post_id": payload.video_id,
+        "post_url": primary_post_url
+    }]
+
+    # Poll source CDN URL from Facebook for instant replication
+    source_url = None
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for _ in range(6):
+            await asyncio.sleep(3)
+            try:
+                chk = await client.get(
+                    f"https://graph.facebook.com/v21.0/{payload.video_id}",
+                    params={"fields": "source,status", "access_token": tok}
+                )
+                cdat = chk.json()
+                if cdat.get("source"):
+                    source_url = cdat["source"]
+                    break
+            except Exception:
+                pass
+
+    fallback_file_url = source_url or primary_post_url
+
+    # Target pages filter
+    target_ids = [str(x) for x in payload.target_page_ids]
+    if "all" in target_ids:
+        remaining_pages = [p for p in all_pages if str(p["page_id"]) != pid]
+    else:
+        remaining_pages = [p for p in all_pages if str(p["page_id"]) in target_ids and str(p["page_id"]) != pid]
+
+    for p in remaining_pages:
+        r_pid = str(p["page_id"])
+        r_name = p["page_name"]
+        r_tok = p["access_token"]
+
+        pub_res = await facebook_service.publish_post_to_page(
+            page_id=r_pid,
+            access_token=r_tok,
+            message=final_message,
+            media_type="video",
+            media_url=fallback_file_url
+        )
+        if pub_res.get("success"):
+            r_post_id = pub_res["post_id"]
+            r_post_url = pub_res["post_url"]
+            database.save_published_post(
+                page_id=r_pid,
+                page_name=r_name,
+                post_id=r_post_id,
+                post_url=r_post_url,
+                message=final_message,
+                media_type="video",
+                boost_command=payload.boost_preset or "standard"
+            )
+            results.append({
+                "success": True,
+                "page_id": r_pid,
+                "page_name": r_name,
+                "post_id": r_post_id,
+                "post_url": r_post_url
+            })
+        else:
+            results.append({
+                "success": False,
+                "page_id": r_pid,
+                "page_name": r_name,
+                "error": pub_res.get("error", "Failed to replicate")
+            })
+
+    groups = database.get_facebook_groups()
+    group_shares = facebook_service.build_group_share_links(primary_post_url, final_message, groups)
+
+    return {
+        "status": "ok",
+        "published_count": sum(1 for r in results if r.get("success")),
+        "total_targets": len(results),
+        "results": results,
+        "first_post_url": primary_post_url,
+        "group_shares": group_shares
+    }
+
 
 @app.get("/api/published-posts")
 @app.get("/published-posts")

@@ -303,10 +303,10 @@ async def update_settings(payload: Dict[str, Any]):
 @app.post("/api/sync-comments")
 @app.get("/sync-comments")
 @app.post("/sync-comments")
-async def sync_recent_comments(limit: int = 5):
+async def sync_recent_comments(limit: int = 1):
     """
     Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж 
-    хариулаагүй үлдсэн комментууд руу шууд хариу илгээх функц
+    хариулаагүй үлдсэн комментууд руу шууд хариу илгээх функц (Хурдан 5-8 сек-д багтана)
     """
     settings = database.get_settings()
     pages = database.get_connected_pages()
@@ -315,14 +315,14 @@ async def sync_recent_comments(limit: int = 5):
     default_pub = settings.get("default_public_reply", ai_service.HUREE_COMMENT_REPLY)
     default_priv = settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         for p in pages:
             page_id = p["page_id"]
             page_token = p["access_token"]
             page_name = p["page_name"]
 
             try:
-                # 1. Сүүлийн постуудыг авах
+                # 1. Сүүлийн постыг авах (Хугацаа хэмнэх үүднээс limit=1)
                 posts_res = await client.get(
                     f"https://graph.facebook.com/v19.0/{page_id}/posts",
                     params={"limit": limit, "access_token": page_token}
@@ -331,10 +331,10 @@ async def sync_recent_comments(limit: int = 5):
 
                 for post in posts:
                     post_id = post["id"]
-                    # 2. Тухайн постын комментуудыг авах
+                    # 2. Тухайн постын сүүлийн 5 комментыг авах
                     comm_res = await client.get(
                         f"https://graph.facebook.com/v19.0/{post_id}/comments",
-                        params={"limit": 10, "access_token": page_token}
+                        params={"limit": 5, "access_token": page_token}
                     )
                     comments = comm_res.json().get("data", [])
 

@@ -300,6 +300,8 @@ async def update_settings(payload: Dict[str, Any]):
 # --- MOBILE REMOTE COMMAND & AUTO-SYNC ENDPOINTS ---
 @app.get("/api/sync-comments")
 @app.post("/api/sync-comments")
+@app.get("/sync-comments")
+@app.post("/sync-comments")
 async def sync_recent_comments(limit: int = 5):
     """
     Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж 
@@ -373,6 +375,8 @@ async def sync_recent_comments(limit: int = 5):
 
 @app.get("/api/command")
 @app.post("/api/command")
+@app.get("/command")
+@app.post("/command")
 async def execute_mobile_command(
     set_price_single: Optional[str] = None,
     set_price_all: Optional[str] = None,

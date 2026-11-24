@@ -158,13 +158,17 @@ async def publish_post_to_page(
                 if link_url:
                     payload["link"] = link_url
                 resp = await client.post(url, data=payload)
-
             data = resp.json()
             if resp.status_code == 200 and ("id" in data or "post_id" in data):
                 raw_post_id = data.get("post_id") or data.get("id")
-                # Clean up post_id if it already has page_id prefix
                 clean_post_id = str(raw_post_id)
-                post_url = f"https://www.facebook.com/{clean_post_id}" if "_" in clean_post_id else f"https://www.facebook.com/{page_id}/posts/{clean_post_id}"
+                if media_type == "video":
+                    post_url = f"https://www.facebook.com/reel/{clean_post_id}/"
+                elif media_type == "image":
+                    post_url = f"https://www.facebook.com/photo.php?fbid={clean_post_id}" if "_" not in clean_post_id else f"https://www.facebook.com/{clean_post_id}"
+                else:
+                    post_url = f"https://www.facebook.com/{clean_post_id}" if "_" in clean_post_id else f"https://www.facebook.com/{page_id}/posts/{clean_post_id}"
+
                 return {
                     "success": True,
                     "page_id": page_id,

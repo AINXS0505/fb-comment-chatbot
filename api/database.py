@@ -38,9 +38,9 @@ DEFAULT_PAGES = [
         "access_token": "EAAQEwsLb8KUBTMXXWTcuk5xKZAGETp6HIcDt7JkgyTZB5dNOegrs3UZA9f5yL69zLgeJks5yIHNCiMgzUd2CYKVJcZBYVJgn1LdG4b95JZCuFcDZAOQgaZBTMUbkAPkcm7MBuQXieLg3RAfxNOl5c7HTbyLymjLvxT9AVyoIwbYHakIqnkdaImWVZCcMM7hoIZBtTKLd5qnEZBfW458PU3rw5LiBIrLoBxrZASr3pEtH7Yuo8Rw5SaOc2gzHGEZD"
     },
     {
-        "page_id": "849736974891001",
+        "page_id": "121180834405750",
         "page_name": "Dornod Ai",
-        "access_token": "EAAQEwsLb8KUBTIGZCZAFrs5KuDqSUZBm7lfmPH4OLZBtVBBS6PGkIVbETxEZB62cvuNIDvBbX9ywFfvkTHX4tQPLI8cVrqR1wIz1v4BidKVD8HQGLWEdE6uAT0hQUMOQz756rg6Ev7ZBZBYWg7FsyiFmMILzo95LyV7BbnkVwNn6LnZA0ZC1Eh5ijKlApPswyIp0Pssg9rI5LLMs7VqK0lPI29biBLqF5fM9PZBtLyuKeEZB1PjFawXmOi7Qi8ZD"
+        "access_token": "EAAQEwsLb8KUBTFdQiVBgzl5AVglgCQe8lcVZBj7LfMFiT6QcDMWHo23VDIpJliqGNnQYDFPLwfy13zLtvDxdJgXMB4ZBaDIgTWkLlqvpF0KysO94d6X8fUp9KcJjdIYRgNoz3Eir6vL1nLPUFNCPYGmFLFyZBBaENhx988hiwCQuz5sqPZArW6WZBwVfzLahYb2NOXQcFVggYheSZChcOWdveail8Rwbvwu1deSZCfZAcdH9w6icFZBSWqYQZD"
     }
 ]
 
@@ -211,7 +211,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-
 # Page token lookup
 def get_page_token(page_id: str) -> Optional[str]:
     conn = get_connection()

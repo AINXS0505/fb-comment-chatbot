@@ -241,17 +241,42 @@
               </div>
 
               <!-- AI Writer Box -->
-              <div class="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl mb-3 space-y-2">
+              <div class="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl mb-3 space-y-2.5">
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Gemini 3.5 AI-аар вирал тайлбар бичүүлэх
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Gemini AI Вирал Драма Студи & Текст зохиогч
                   </span>
+                  <span class="text-[10px] text-indigo-500 font-mono">QPay + 1000+ кино холбоос бэлэн</span>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-2">
                   <input type="text" id="ai-movie-title" placeholder="Киноны нэр (ж: Зоригт цэрэг, Цасан хатан, Босс...)" class="flex-1 px-3 py-1.5 text-xs border border-indigo-200 rounded-lg bg-white">
+                  <input type="hidden" id="ai-selected-genre" value="Драма">
                   <button type="button" onclick="generateAICaption()" id="btn-generate-caption" class="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm transition">
                     <i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх
                   </button>
+                </div>
+                <!-- Quick Genre Pills -->
+                <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Жанр сонгох:</span>
+                  <button type="button" onclick="selectGenreAndGenerate('🔥 Тэрбумтан & Өшөө авалт')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs">
+                    <span>🔥 Тэрбумтан & Өшөө</span>
+                  </button>
+                  <button type="button" onclick="selectGenreAndGenerate('💔 Салалт & Хүүхэд')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs">
+                    <span>💔 Салалт & Хүүхэд</span>
+                  </button>
+                  <button type="button" onclick="selectGenreAndGenerate('👑 Хадам ээж & Баян бэр')" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs">
+                    <span>👑 Хадам & Бэр</span>
+                  </button>
+                  <button type="button" onclick="selectGenreAndGenerate('🍿 Дурлал & Романс')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs">
+                    <span>🍿 Романс</span>
+                  </button>
+                </div>
+                <!-- AI Generated Variations Cards -->
+                <div id="ai-variations-box" class="hidden mt-2 pt-2 border-t border-indigo-100 space-y-1.5">
+                  <span class="text-[11px] font-bold text-indigo-900 block flex items-center gap-1">
+                    <i class="fa-solid fa-layer-group text-indigo-600"></i> AI санал болгосон хувилбарууд (Дарж сонгоно уу):
+                  </span>
+                  <div id="ai-variations-cards" class="grid grid-cols-1 md:grid-cols-3 gap-2"></div>
                 </div>
               </div>
 
@@ -498,7 +523,6 @@
 
         <!-- Command URL Box -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-          
           <span class="text-xs font-semibold text-slate-700 block">Утасны Bookmark / Шууд хандах URL:</span>
           <p class="text-xs text-slate-500">Энэ хаягийг утсан дээрээ Bookmark эсвэл Home Screen дээрээ нэмснээр хүссэн үедээ 1 секундийн дотор удирдах боломжтой:</p>
           <code class="block bg-white p-2 rounded border border-slate-200 text-xs text-indigo-600 font-mono truncate">https://fb-comment-chatbot.vercel.app</code>
@@ -683,6 +707,16 @@
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Хэрэглэгчийн бичсэн коммент</label>
             <textarea id="sim-comment-text" rows="3" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Жишээ: Энэ киноны үргэлжлэлийг хаанаас үзэх вэ? 99112233 дугаар руу линкийг нь явуулж өгөөрэй"></textarea>
+          </div>
+
+          <!-- Quick Test Chips -->
+          <div class="flex items-center gap-1.5 flex-wrap pt-1">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Шуурхай турших:</span>
+            <button type="button" onclick="runSimQuick('Үзэх')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition">"Үзэх"</button>
+            <button type="button" onclick="runSimQuick('1 кино хэд вэ, яаж төлөх вэ?')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition">"Үнэ хэд вэ?"</button>
+            <button type="button" onclick="runSimQuick('Бүх 1000 киноны VIP эрх 15900₮-өөр яаж авах вэ?')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition">"VIP 15,900₮ багц"</button>
+            <button type="button" onclick="runSimQuick('QPay данс явуулаач, шууд төлье')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition">"QPay төлбөр"</button>
+            <button type="button" onclick="runSimQuick('Утас 99112233 залгаарай')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition">"Утасны дугаар"</button>
           </div>
 
           <button type="submit" id="sim-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
@@ -1016,6 +1050,12 @@
       showToast('Тохиргоо амжилттай хадгалагдлаа');
     }
 
+    function runSimQuick(text) {
+      document.getElementById('sim-comment-text').value = text;
+      const fakeEvent = { preventDefault: () => {} };
+      runSimulator(fakeEvent);
+    }
+
     async function runSimulator(e) {
       e.preventDefault();
       const btn = document.getElementById('sim-btn');
@@ -1104,6 +1144,7 @@
       showToast('Дүрэм устгагдлаа');
       loadRules();
     }
+
     async function updateLead(id, status) {
       await fetch(`/api/leads/${id}/status`, {
         method: 'POST',
@@ -1498,6 +1539,7 @@
       document.getElementById('char-counter').innerText = `${val.length} тэмдэгт`;
       document.getElementById('preview-caption').innerText = val || 'Постын тайлбар энд харагдана...';
     }
+
     function updateMediaPreview() {
       const type = document.getElementById('pub-media-type').value;
       const box = document.getElementById('preview-media-box');
@@ -1526,7 +1568,7 @@
       // Check if URL is entered
       const url = document.getElementById('pub-media-url').value.trim();
       if (type === 'image' && url) {
-        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'p-4 text-xs text-rose-500\\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
       } else if (type === 'video' && url) {
         box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
       } else {
@@ -1549,8 +1591,19 @@
       }
     }
 
+    function selectGenreAndGenerate(genre) {
+      const gEl = document.getElementById('ai-selected-genre');
+      if (gEl) gEl.value = genre;
+      const titleInput = document.getElementById('ai-movie-title');
+      if (!titleInput.value.trim()) {
+        titleInput.value = "Шинэ Драма";
+      }
+      generateAICaption();
+    }
+
     async function generateAICaption() {
       const movieTitle = document.getElementById('ai-movie-title').value.trim();
+      const genre = (document.getElementById('ai-selected-genre') && document.getElementById('ai-selected-genre').value) || 'Драма';
       if (!movieTitle) {
         alert('Киноны нэрийг оруулна уу');
         return;
@@ -1563,17 +1616,42 @@
         const res = await fetch('/api/ai-craft-caption', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ movie_title: movieTitle })
+          body: JSON.stringify({ movie_title: movieTitle, genre: genre })
         });
         const data = await res.json();
-        document.getElementById('pub-caption').value = data.caption || data.short_caption;
+        const mainText = data.caption || data.short_caption;
+        document.getElementById('pub-caption').value = mainText;
         updateCharCount();
-        showToast('Gemini AI вирал тайлбарыг амжилттай үүсгэлээ!');
+
+        // Render variations cards if available
+        const varBox = document.getElementById('ai-variations-box');
+        const varCards = document.getElementById('ai-variations-cards');
+        if (varBox && varCards && data.variations && data.variations.length > 0) {
+          window._aiVariations = data.variations;
+          varCards.innerHTML = data.variations.map((v, idx) => `
+            <div onclick="applyCaptionVariation(${idx})" class="p-2.5 bg-white border border-indigo-200 hover:border-indigo-500 rounded-xl cursor-pointer hover:shadow-md transition text-left group">
+              <span class="block text-[11px] font-bold text-indigo-900 group-hover:text-indigo-600 mb-1">${v.title}</span>
+              <p class="text-[10px] text-slate-500 line-clamp-3 leading-snug">${v.text}</p>
+              <span class="mt-1.5 inline-block text-[9px] font-bold text-indigo-600 group-hover:underline">Сонгох <i class="fa-solid fa-check ml-0.5"></i></span>
+            </div>
+          `).join('');
+          varBox.classList.remove('hidden');
+        }
+
+        showToast('Gemini AI вирал тайлбаруудыг амжилттай үүсгэлээ!');
       } catch (e) {
         alert('AI үүсгэхэд алдаа гарлаа: ' + e.message);
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх`;
+      }
+    }
+
+    function applyCaptionVariation(idx) {
+      if (window._aiVariations && window._aiVariations[idx]) {
+        document.getElementById('pub-caption').value = window._aiVariations[idx].text;
+        updateCharCount();
+        showToast('Сонгосон хувилбар постын тайлбар талбарт орлоо!');
       }
     }
 
@@ -1814,13 +1892,25 @@
                   <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">${p.boost_command || 'standard'}</span>
                 </div>
                 <p class="text-xs text-slate-500 truncate mt-0.5" title="${p.message}">${p.message}</p>
-                <span class="text-[10px] text-slate-400">${p.created_at}</span>
+                <div class="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                  <span><i class="fa-regular fa-clock mr-1"></i>${p.created_at}</span>
+                  <div id="metrics-${p.id}" class="inline-flex items-center gap-1.5">
+                    <button onclick="fetchPostMetrics('${p.post_id}', '${p.page_id}', 'metrics-${p.id}')" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition">
+                      <i class="fa-solid fa-chart-simple"></i> Хандалт шалгах
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
-              <a href="${p.post_url}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition flex items-center gap-1">
+              <a href="${p.post_url}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition flex items-center gap-1 shadow-xs">
                 <span>Facebook дээр үзэх</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
               </a>
+              ${p.media_type === 'video' ? `
+                <button onclick="openCrosspostModal('${p.post_id}', '${p.post_url}', '${encodeURIComponent(p.message || '')}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg transition flex items-center gap-1" title="Бусад хуудсанд 0.5 секундэд дахин түгээх">
+                  <i class="fa-solid fa-repeat"></i> <span>Түгээх</span>
+                </button>
+              ` : ''}
               <button onclick="sharePublishedPostToGroups('${p.post_url}', '${encodeURIComponent(p.message || '')}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition" title="Группүүдэд түгээх">
                 <i class="fa-solid fa-share-nodes"></i>
               </button>
@@ -1829,6 +1919,98 @@
         `).join('');
       } catch (e) {
         console.error("Error loading published posts:", e);
+      }
+    }
+
+    async function fetchPostMetrics(postId, pageId, containerId) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = `<span class="text-[10px] text-slate-400 font-mono"><i class="fa-solid fa-spinner fa-spin"></i> Хандалт татаж байна...</span>`;
+      try {
+        const res = await fetch(`/api/post-metrics/${postId}?page_id=${pageId || ''}`);
+        const data = await res.json();
+        if (data.success) {
+          el.innerHTML = `
+            <span class="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1">
+              <i class="fa-solid fa-eye text-blue-500"></i> ${Number(data.views || 0).toLocaleString()} үзэлт
+            </span>
+            <span class="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1">
+              <i class="fa-solid fa-thumbs-up text-indigo-500"></i> ${Number(data.likes || 0).toLocaleString()} лайк
+            </span>
+            <span class="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1">
+              <i class="fa-solid fa-comment text-emerald-500"></i> ${Number(data.comments || 0).toLocaleString()} коммент
+            </span>
+          `;
+        } else {
+          el.innerHTML = `<span class="text-[10px] text-slate-400">Хандалт хараахан гараагүй</span>`;
+        }
+      } catch (err) {
+        el.innerHTML = `<span class="text-[10px] text-rose-500">Алдаа: ${err.message}</span>`;
+      }
+    }
+    let _currentCrosspostVidId = '';
+    let _currentCrosspostMsg = '';
+
+    function openCrosspostModal(postId, postUrl, encMsg) {
+      _currentCrosspostVidId = postId;
+      _currentCrosspostMsg = decodeURIComponent(encMsg);
+      
+      const modal = document.getElementById('modal-crosspost');
+      if (!modal) return;
+      document.getElementById('crosspost-vid-id-label').innerText = postId;
+      document.getElementById('crosspost-preview-caption').value = _currentCrosspostMsg;
+      
+      const pagesContainer = document.getElementById('crosspost-pages-list');
+      if (pagesContainer && window.publisherPages && window.publisherPages.length > 0) {
+        pagesContainer.innerHTML = window.publisherPages.map(p => `
+          <label class="flex items-center space-x-2.5 p-2 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-200 cursor-pointer text-xs">
+            <input type="checkbox" class="crosspost-page-checkbox rounded text-indigo-600 focus:ring-indigo-500" value="${p.page_id}" checked>
+            <div class="truncate">
+              <span class="font-bold text-slate-800 block">${p.page_name}</span>
+              <span class="text-[10px] text-slate-400 font-mono">ID: ${p.page_id}</span>
+            </div>
+          </label>
+        `).join('');
+      }
+      
+      modal.classList.remove('hidden');
+    }
+
+    function closeCrosspostModal() {
+      const modal = document.getElementById('modal-crosspost');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function submitReCrosspost() {
+      const checkboxes = document.querySelectorAll('.crosspost-page-checkbox:checked');
+      const selectedPids = Array.from(checkboxes).map(c => c.value);
+      if (selectedPids.length === 0) {
+        alert('Түгээх дор хаяж 1 хуудас сонгоно уу!');
+        return;
+      }
+      const btn = document.getElementById('btn-submit-crosspost');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Секундын дотор түгээж байна...`;
+      
+      try {
+        const res = await fetch('/api/crosspost-existing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_id: _currentCrosspostVidId,
+            target_page_ids: selectedPids,
+            message: document.getElementById('crosspost-preview-caption').value
+          })
+        });
+        const data = await res.json();
+        closeCrosspostModal();
+        showToast(`🎉 ${data.published_count}/${data.total_targets} хуудсанд амжилттай түгээгдлээ!`);
+        loadPublishedPosts();
+      } catch (err) {
+        alert('Түгээхэд алдаа гарлаа: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-bolt mr-1"></i> Шууд түгээх`;
       }
     }
 
@@ -1941,5 +2123,38 @@
       }
     });
   </script>
+
+  <!-- Modal: Instant Re-Crossposting to Other Pages -->
+  <div id="modal-crosspost" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-arrows-split-up-and-left text-emerald-600"></i> Бусад Facebook хуудсуудад дахин түгээх
+        </h3>
+        <button onclick="closeCrosspostModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div>
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+          <span>Сонгосон видео ID:</span>
+          <span id="crosspost-vid-id-label" class="font-mono font-bold text-indigo-600"></span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-2">Facebook Crossposting API-аар бичлэгийг дахин хуулахгүйгээр секундын дотор түгээнэ.</p>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Постын тайлбар:</label>
+        <textarea id="crosspost-preview-caption" rows="3" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl leading-relaxed focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Түгээх Facebook хуудсуудаа сонгоно уу:</label>
+        <div id="crosspost-pages-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+          <!-- Loaded via JS -->
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-2 pt-3 border-t">
+        <button type="button" onclick="closeCrosspostModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">Цуцлах</button>
+        <button type="button" id="btn-submit-crosspost" onclick="submitReCrosspost()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt"></i> <span>Шууд түгээх (0.5с)</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

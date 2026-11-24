@@ -82,6 +82,36 @@ async def send_private_messenger_reply(comment_id: str, message: str, access_tok
         print(f"[Private Reply Exception]: {e}")
         return {"error": str(e)}
 
+async def send_direct_chat_reply(recipient_id: str, message: str, access_token: str) -> Dict[str, Any]:
+    """
+    Хэрэглэгчийн Messenger чат руу шууд хариулах (Direct Messenger Reply)
+    POST /me/messages
+    """
+    if not access_token:
+        print(f"[Error] Access token байхгүй байна.")
+        return {"error": "Missing access token"}
+
+    url = f"{GRAPH_API_URL}/me/messages"
+    params = {"access_token": access_token}
+    payload = {
+        "recipient": {
+            "id": recipient_id
+        },
+        "message": {
+            "text": message
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, params=params, json=payload)
+            data = resp.json()
+            print(f"[Direct Chat Reply] Status: {resp.status_code}, Recipient: {recipient_id}, Response: {data}")
+            return data
+    except Exception as e:
+        print(f"[Direct Chat Reply Exception]: {e}")
+        return {"error": str(e)}
+
 # --- NEW MULTI-PAGE PUBLISHING & DISTRIBUTION LOGIC ---
 
 async def publish_post_to_page(

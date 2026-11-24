@@ -204,6 +204,14 @@
                   <div class="w-full bg-indigo-200/60 rounded-full h-2.5 overflow-hidden">
                     <div id="upload-progress-bar" class="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
                   </div>
+                  <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span id="upload-progress-bytes" class="font-mono font-medium text-slate-600">0.0 MB / 0.0 MB</span>
+                    <span id="upload-progress-speed" class="font-mono text-indigo-600 font-semibold">0.0 MB/s</span>
+                  </div>
+                  <div id="upload-stall-alert" class="hidden p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 flex items-center justify-between">
+                    <span><i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i> Интернэт холболт удааширлаа, түр хүлээнэ үү...</span>
+                    <button type="button" onclick="cancelUpload()" class="underline font-bold text-amber-900 ml-2">Цуцлах</button>
+                  </div>
                 </div>
               </div>
 
@@ -489,6 +497,7 @@
         </form>
 
         <!-- Command URL Box -->
+        <!-- Command URL Box -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
           <span class="text-xs font-semibold text-slate-700 block">Утасны Bookmark / Шууд хандах URL:</span>
           <p class="text-xs text-slate-500">Энэ хаягийг утсан дээрээ Bookmark эсвэл Home Screen дээрээ нэмснээр хүссэн үедээ 1 секундийн дотор удирдах боломжтой:</p>
@@ -496,6 +505,7 @@
         </div>
       </div>
     </div>
+
     <!-- TAB 1: ANALYTICS & LOGS -->
     <div id="tab-analytics" class="tab-content space-y-8">
       
@@ -790,6 +800,9 @@
         </div>
       </form>
     </div>
+
+    
+    </div>
   </div>
 
   <!-- Notification Toast -->
@@ -797,6 +810,7 @@
     <i class="fa-solid fa-check text-emerald-400"></i>
     <span id="toast-message">Амжилттай хадгалагдлаа</span>
   </div>
+
   <script>
     // Tab switching
     function switchTab(tabId) {
@@ -1150,6 +1164,7 @@
         alert('Алдаа: ' + e.message);
       }
     }
+
     // --- MULTI-PAGE PUBLISHER & VIRAL GROUP SHARING JAVASCRIPT ---
     let publisherPages = [];
     let targetGroups = [];
@@ -1213,21 +1228,62 @@
       updateMediaPreview();
     }
 
-    // Upload file to tmpfiles with live progress
+    let currentUploadXhr = null;
+
+    function cancelUpload() {
+      if (currentUploadXhr) {
+        currentUploadXhr.abort();
+        currentUploadXhr = null;
+      }
+    }
+
+    // Upload file to tmpfiles with live progress, speed tracking & stall detection
     function uploadFileToTmpFiles(file, onProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        currentUploadXhr = xhr;
         const formData = new FormData();
         formData.append('file', file);
 
+        const startTime = Date.now();
+        let lastLoaded = 0;
+        let lastTime = startTime;
+        let stallTimer = null;
+
+        const resetStallTimer = () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          const stallAlert = document.getElementById('upload-stall-alert');
+          if (stallAlert) stallAlert.classList.add('hidden');
+          stallTimer = setTimeout(() => {
+            if (stallAlert) stallAlert.classList.remove('hidden');
+          }, 15000); // 15s without progress triggers friendly warning
+        };
+
+        resetStallTimer();
+
         xhr.upload.addEventListener('progress', (e) => {
+          resetStallTimer();
           if (e.lengthComputable && onProgress) {
+            const now = Date.now();
+            const timeDiff = (now - lastTime) / 1000;
+            let speedMBs = 0;
+            if (timeDiff > 0.4) {
+              const bytesDiff = e.loaded - lastLoaded;
+              speedMBs = ((bytesDiff / (1024 * 1024)) / timeDiff).toFixed(1);
+              lastLoaded = e.loaded;
+              lastTime = now;
+            }
+
             const pct = Math.round((e.loaded / e.total) * 100);
-            onProgress(pct);
+            const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
+            const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+            onProgress({ pct, loadedMB, totalMB, speedMBs });
           }
         });
 
         xhr.addEventListener('load', () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          currentUploadXhr = null;
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const res = JSON.parse(xhr.responseText);
@@ -1246,8 +1302,25 @@
           }
         });
 
-        xhr.addEventListener('error', () => reject(new Error('Сүлжээний алдаа гарлаа. Холболтоо шалгана уу.')));
-        xhr.addEventListener('abort', () => reject(new Error('Байршуулалт цуцлагдлаа')));
+        xhr.addEventListener('error', () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          currentUploadXhr = null;
+          reject(new Error('Сүлжээний алдаа гарлаа. Холболтоо шалгана уу.'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          currentUploadXhr = null;
+          reject(new Error('Байршуулалт цуцлагдлаа.'));
+        });
+
+        // 10 minutes timeout for high-resolution large videos
+        xhr.timeout = 600000;
+        xhr.addEventListener('timeout', () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          currentUploadXhr = null;
+          reject(new Error('Холболтын хугацаа дууслаа (Timeout). Интернетээ шалгана уу.'));
+        });
 
         xhr.open('POST', 'https://tmpfiles.org/api/v1/upload');
         xhr.send(formData);
@@ -1353,7 +1426,7 @@
       // Check if URL is entered
       const url = document.getElementById('pub-media-url').value.trim();
       if (type === 'image' && url) {
-        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'p-4 text-xs text-rose-500\\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
       } else if (type === 'video' && url) {
         box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
       } else {
@@ -1403,6 +1476,7 @@
         btn.innerHTML = `<i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх`;
       }
     }
+
     async function publishMultiPages(e) {
       e.preventDefault();
       const checkboxes = document.querySelectorAll('.page-checkbox:checked');
@@ -1440,12 +1514,18 @@
           progressStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 animate-bounce"></i> Компьютерээс хуулж байна...`;
           
           try {
-            finalMediaUrl = await uploadFileToTmpFiles(selectedMediaFile, (pct) => {
-              progressBar.style.width = `${pct}%`;
-              progressPct.innerText = `${pct}%`;
-              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Компьютерээс хуулж байна (${pct}%)...`;
+            finalMediaUrl = await uploadFileToTmpFiles(selectedMediaFile, (info) => {
+              progressBar.style.width = `${info.pct}%`;
+              progressPct.innerText = `${info.pct}%`;
+              const bytesEl = document.getElementById('upload-progress-bytes');
+              const speedEl = document.getElementById('upload-progress-speed');
+              if (bytesEl) bytesEl.innerText = `${info.loadedMB} MB / ${info.totalMB} MB`;
+              if (speedEl && parseFloat(info.speedMBs) > 0) speedEl.innerText = `🚀 ${info.speedMBs} MB/s`;
+              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Компьютерээс хуулж байна (${info.pct}%)...`;
             });
             progressStatus.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i> Файл амжилттай бэлэн боллоо!`;
+            const speedEl = document.getElementById('upload-progress-speed');
+            if (speedEl) speedEl.innerText = `100% Дууссан`;
           } catch (uploadErr) {
             progressContainer.classList.add('hidden');
             btn.disabled = false;

@@ -1269,6 +1269,10 @@ async function submitMultiPublish() {
   }
 }
 
+async function submitAddGroup() {
+  return saveNewGroup();
+}
+
 async function saveNewGroup() {
   const name = document.getElementById('grp-name')?.value || '';
   const url = document.getElementById('grp-url')?.value || '';

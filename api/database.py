@@ -10,37 +10,37 @@ DB_FILE = os.environ.get("DB_FILE", "bot.db")
 if os.environ.get("VERCEL"):
     DB_FILE = "/tmp/bot.db"
 
-# Pre-configured 3 connected Facebook Pages
+# Pre-configured 6 connected Facebook Pages (Permanent Never-Expiring Tokens)
 DEFAULT_PAGES = [
     {
         "page_id": "2159494444293875",
         "page_name": "Huree Kino www.huree.site",
-        "access_token": "EAAQEwsLb8KUBTB9KslJZAb5RyjCZCToDwIBH21uXHCzB6holpzfrkAYqLNLmjVTZCoijPK3ZBnlssbdC1upGbhUzyWNXc9RUVEcKKe43w7ozF4gKPk8cJZBYl3Q4tLZBzxtBLVpYievzobn4thOu3v8ZCN03DdAysf9f9Aa00gan7vCI3yk8qPDbUb7XepUTofKuO3qPEO1ZCspzCwvp19IMUAA7dyAc1gutxoeQ9P7EIGhLeiUaXh9jsTsZD"
+        "access_token": "EAAQEwsLb8KUBTFQShZAdofUliTe8f3pcYfEtBKZCZC60HwyRlHfEYpLEPLpHPnK0b8gghmmZAkPwSTgpSmIKlBN7joHYwOiIqqAaZCcy1TZA5IUtZBitv6xs2W0IwQ3pk6shPXIfs3boxKZBQB1LR1sCBkkZBdePF5BiPZA0dpBJ6i7iiFkI3PQ192zw7FCuDifUZBTn2jTfXqSLAD7WQUfC8rZAFX0ZA"
     },
     {
         "page_id": "1495236273664035",
         "page_name": "Nice Drama Ai",
-        "access_token": "EAAQEwsLb8KUBTDFuwI4LN5UISxOJbzpAZAlyiFZBTjmrD86txW0CYqqKZBDfdXniufu7Ww2EcUxH0rjkHes6rk2nDe4TCvDc02Y8zkxs9jQ9IlhxA3tWbWv6gyWZASJNRdUIZB997oA0faWZBupnznGLNfdZBSOBIeIo7rzCyPRE64g23R5a5qsd5mMBAy7HQa0wZAJZCY8gQaSeb7290Wv75r4VGwzcZBrY9EFHeROgPD1PT9vJeXeEFUEXIZD"
+        "access_token": "EAAQEwsLb8KUBTC6ZCZCVtgFZBDrTmlLl0XZBGu4xpZBG4Rfs9Suun7ilHuvIbUm451Jugq1THIYxlVQ4reb8z5nlcQ0VqRMp4l7hCidONSLs8ZBI6tNqFfZC0ktEeZCls13B6mCZBOyTGWKzOXmHRo0IeN2dVo0ao87udr0vgYjyaGdJAWrrlD4PbKTbRRWUGRzBe830ZBAF2e7Hm39nTydNa5S1eF"
     },
     {
         "page_id": "1352524827955013",
         "page_name": "WOW Mini Drama",
-        "access_token": "EAAQEwsLb8KUBTNVH00S0WopbUxsksPJOrYpST0cH1ePeZAlcY3GFmAhjFYQlUsi2NH9zFxZCSZCmrqj79umOb3xUKa0zG96I4bDCIy0M645TQf0SF30cN0lDRSsqdA5BVA89kI6SUxCMnJP7t5zR5cyivUk6J7tbHchL3cAQPLo3IJ17026V0BcRp7QU8ayEq9ceqvQaNUFWjo6zUadI0OnFfvbvSX1QLj8c2buskRqq2sOH0aRADYZD"
+        "access_token": "EAAQEwsLb8KUBTOuWyLPMhtcfkgc1gcsG5ngvgBvUbqPniYD0vQEWZArF5c5RXedx9DdmAoTmZCw7NQc5NTg04rtRpEcZBK9vJm7YgVjZB4bvSKXqvtYHd3HZAEBZC4cwX2nP5xvWZBvRMzv32pZBd5ZA6ABCvYuWrL6y2AbE1LzdBnBCdyCv1VR0Tw63jPsA8rRy9GXFtEP1ZBsdhyLw9K3QuUaESP"
     },
     {
         "page_id": "1508100029049981",
         "page_name": "Tenger Drama mongolia",
-        "access_token": "EAAQEwsLb8KUBTKwBHwBdPcXfNfASSZBzEfAQQTFGaZCcqq8ojIqLbBZBtZB5YBuepZBiMZCxIB71HZA17WL4EOgK9axzHHXjcjSRI3c4RbCItKgqSocEMly3uscZAdOHcwf9K7t0KipWkP0ZBOUFeV3oXc5ZAiJDbzQaLZBZClsr9v2cLdWmnkjjfjevkrJsazZBf7tZAqSXoUlUuZAVAgL0MIR1FdJaVWK2KyTOcANuxF0HrGt8NEffBO4ZCrdBlHgZD"
+        "access_token": "EAAQEwsLb8KUBTIVcZAbjQv2rZBPDoXSSM1B66KChDk1PRDl8F2oswYzWZAKxOvTZCcdHfqCocSiZBuaSaC2olQqBt6eAAVcCVZAd5RsY7QNpUoV3BafZCX5GKlWZBlEcZA6XIfdMZAj1jzGNMfzj3ieYkUIiFZCit4uI9KFhOUACqX0j7ZAwLEiVU4DyYMiYRgRj1fPZBH3D5wlMJh5f0PkKR5OGyifUX"
     },
     {
         "page_id": "1391701170699267",
         "page_name": "Lolo Drama",
-        "access_token": "EAAQEwsLb8KUBTMXXWTcuk5xKZAGETp6HIcDt7JkgyTZB5dNOegrs3UZA9f5yL69zLgeJks5yIHNCiMgzUd2CYKVJcZBYVJgn1LdG4b95JZCuFcDZAOQgaZBTMUbkAPkcm7MBuQXieLg3RAfxNOl5c7HTbyLymjLvxT9AVyoIwbYHakIqnkdaImWVZCcMM7hoIZBtTKLd5qnEZBfW458PU3rw5LiBIrLoBxrZASr3pEtH7Yuo8Rw5SaOc2gzHGEZD"
+        "access_token": "EAAQEwsLb8KUBTDneCbK3pjTHVzWZAvOC3ECPZC2HVhiLpO1HTV3yFE3n63evHpHGt6EYK4cHUaV4YQIZB2tSt9gCTuUwVKMPorRW3xFvaE7ZCKtyDv3olSPRsBvVlUTepccqMp3gsBseXIwHZAnd7s9fINepW7XJ4Kh314kLFyiN1zBrlCHpY8X8OeZApTrhVnNiQH2ZB4ZCAlwqx66unqGBgQ1t"
     },
     {
         "page_id": "121180834405750",
         "page_name": "Dornod Ai",
-        "access_token": "EAAQEwsLb8KUBTFdQiVBgzl5AVglgCQe8lcVZBj7LfMFiT6QcDMWHo23VDIpJliqGNnQYDFPLwfy13zLtvDxdJgXMB4ZBaDIgTWkLlqvpF0KysO94d6X8fUp9KcJjdIYRgNoz3Eir6vL1nLPUFNCPYGmFLFyZBBaENhx988hiwCQuz5sqPZArW6WZBwVfzLahYb2NOXQcFVggYheSZChcOWdveail8Rwbvwu1deSZCfZAcdH9w6icFZBSWqYQZD"
+        "access_token": "EAAQEwsLb8KUBTJw5oDwBR7qSTCRrfvIaFTUjZAxqhiU1qIgE7jGngZAoGYDPqZCk729nQxCbdwVzNUEeTO2UYPR9WXhiYWKsWEzZAENqR0VLIX02xseLN9I7oYgBrLXtpPZB836DTrXS0ni2yh5zo2ln3Xu5FmzJHaB1cAVGAztqZCcHZB85kHDmxAdsxOOrIVu24wxFVKRjWJWRsMnOAkZD"
     }
 ]
 
@@ -74,12 +74,14 @@ def init_db():
     );
     """)
 
-    # Populate 3 default pages
+    # Populate default pages
     for p in DEFAULT_PAGES:
         cursor.execute("""
         INSERT OR REPLACE INTO connected_pages (page_id, page_name, access_token, is_active)
         VALUES (?, ?, ?, 1)
         """, (p["page_id"], p["page_name"], p["access_token"]))
+    # Ensure old obsolete page IDs are pruned
+    cursor.execute("DELETE FROM connected_pages WHERE page_id = '849736974891001'")
 
     # 2. Post Configurations
     cursor.execute("""
@@ -211,6 +213,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 # Page token lookup
 def get_page_token(page_id: str) -> Optional[str]:
     conn = get_connection()

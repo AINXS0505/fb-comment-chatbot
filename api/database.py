@@ -168,6 +168,47 @@ def init_db():
     VALUES (1, 'default_all', 'Хүрээ Кино (www.huree.site) Автомат хариу', 'үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,үнэтэй,сонирхож,байна', ?, ?, 1, 1)
     """, (HUREE_COMMENT_REPLY, HUREE_PROMO_TEXT))
 
+    # 6. Published Posts History
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS published_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        page_id TEXT NOT NULL,
+        page_name TEXT NOT NULL,
+        post_id TEXT NOT NULL,
+        post_url TEXT NOT NULL,
+        message TEXT,
+        media_type TEXT DEFAULT 'text',
+        media_url TEXT,
+        boost_command TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # 7. Facebook Target Groups for Auto/Smart Sharing
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS facebook_groups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_name TEXT NOT NULL,
+        group_url TEXT NOT NULL,
+        category TEXT DEFAULT 'Кино & Сонирхогчид',
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # Populate popular default movie groups if empty
+    cursor.execute("SELECT COUNT(*) FROM facebook_groups")
+    if cursor.fetchone()[0] == 0:
+        default_groups = [
+            ("Монгол Кино Сонирхогчдын Бүлгэм", "https://www.facebook.com/groups/mongolkinogroup", "Монгол кино"),
+            ("Drama Lovers Mongolia (Солонгос, Хятад Драма)", "https://www.facebook.com/groups/dramaloversmn", "Драма сонирхогчид"),
+            ("Mini Drama & Short Series Mongolia", "https://www.facebook.com/groups/minidramamn", "Богино драма"),
+            ("Шинэ Кино Үзвэр & Кино Шүүмж", "https://www.facebook.com/groups/shinekinomn", "Кино үзвэр"),
+            ("Кино Хорхойтнууд (Movie Buffs)", "https://www.facebook.com/groups/kinohorhoitnuud", "Ерөнхий кино")
+        ]
+        for gname, gurl, gcat in default_groups:
+            cursor.execute("INSERT INTO facebook_groups (group_name, group_url, category) VALUES (?, ?, ?)", (gname, gurl, gcat))
+
     conn.commit()
     conn.close()
 
@@ -324,11 +365,70 @@ def get_dashboard_stats() -> Dict[str, Any]:
     sentiment_rows = cursor.fetchall()
     sentiments = {row["sentiment"] or "unknown": row["cnt"] for row in sentiment_rows}
 
+    cursor.execute("SELECT COUNT(*) FROM published_posts")
+    published_count = cursor.fetchone()[0]
+
     conn.close()
     return {
         "total_comments": total_comments,
         "total_leads": total_leads,
         "replies_sent": replies_sent,
         "sentiments": sentiments,
-        "connected_pages_count": len(DEFAULT_PAGES)
+        "connected_pages_count": len(DEFAULT_PAGES),
+        "published_posts_count": published_count
     }
+
+# --- Published Posts Queries ---
+def save_published_post(page_id: str, page_name: str, post_id: str, post_url: str,
+                        message: str, media_type: str = "text", media_url: Optional[str] = None,
+                        boost_command: Optional[str] = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO published_posts (page_id, page_name, post_id, post_url, message, media_type, media_url, boost_command)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (page_id, page_name, post_id, post_url, message, media_type, media_url, boost_command))
+    post_row_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return post_row_id
+
+def get_published_posts(limit: int = 30) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM published_posts ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def delete_published_post(id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM published_posts WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+
+# --- Facebook Groups Queries ---
+def get_facebook_groups() -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM facebook_groups ORDER BY id ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def save_facebook_group(name: str, url: str, category: str = "Кино") -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO facebook_groups (group_name, group_url, category) VALUES (?, ?, ?)", (name, url, category))
+    gid = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return gid
+
+def delete_facebook_group(group_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM facebook_groups WHERE id = ?", (group_id,))
+    conn.commit()
+    conn.close()

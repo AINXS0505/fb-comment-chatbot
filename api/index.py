@@ -3,6 +3,7 @@ import sys
 import csv
 import io
 import json
+import httpx
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse

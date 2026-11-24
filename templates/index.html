@@ -1163,15 +1163,23 @@ async function generateAICaptions() {
     });
     const data = await res.json();
     if (data.captions && data.captions.length > 0) {
-      resultsBox.innerHTML = data.captions.map((cap, i) => `
+      resultsBox.innerHTML = data.captions.map((cap, i) => {
+        let titleText = cap.title || ('Хувилбар ' + (i+1));
+        let hookBadge = cap.hook ? `<span class="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded font-medium">${cap.hook}</span>` : '';
+        let bodyText = cap.text || cap.caption || cap.body || (typeof cap === 'string' ? cap : JSON.stringify(cap));
+        return `
         <div class="p-3 bg-white rounded-lg border border-purple-100 shadow-sm space-y-1">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-purple-700">Хувилбар ${i+1}: ${cap.hook || 'Хувилбар'}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-purple-700">${titleText}</span>
+              ${hookBadge}
+            </div>
             <button type="button" onclick="selectCaption(${i})" class="px-2 py-0.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded">Сонгох</button>
           </div>
-          <p class="text-xs text-slate-700 whitespace-pre-line">${cap.caption || cap.body || (typeof cap === 'string' ? cap : JSON.stringify(cap))}</p>
+          <p class="text-xs text-slate-700 whitespace-pre-line">${bodyText}</p>
         </div>
-      `).join('');
+      `;
+      }).join('');
       resultsBox.classList.remove('hidden');
       window._generatedCaptions = data.captions;
     } else {
@@ -1189,7 +1197,7 @@ function selectCaption(idx) {
   const cap = window._generatedCaptions?.[idx];
   const textarea = document.getElementById('pub-message');
   if (textarea && cap) {
-    textarea.value = cap.caption || cap.body || (typeof cap === 'string' ? cap : '');
+    textarea.value = cap.text || cap.caption || cap.body || (typeof cap === 'string' ? cap : '');
     toggleAICaptionBox();
   }
 }

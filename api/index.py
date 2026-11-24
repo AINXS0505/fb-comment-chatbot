@@ -298,6 +298,8 @@ class PostRuleSchema(BaseModel):
 async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
     return {"status": "ok", "rule_id": rule_id}
+
+
 @app.delete("/api/rules/{rule_id}")
 @app.delete("/rules/{rule_id}")
 async def delete_rule(rule_id: int):
@@ -602,6 +604,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
                     "is_active": 1
                 })
 
+
             results.append({
                 "success": True,
                 "page_id": pid,
@@ -839,6 +842,145 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
         "results": results,
         "first_post_url": primary_post_url,
         "group_shares": group_shares
+    }
+
+
+@app.get("/api/post-metrics/{post_id}")
+@app.get("/post-metrics/{post_id}")
+async def get_post_metrics_endpoint(post_id: str, page_id: Optional[str] = None):
+    """
+    Facebook Graph API-аас постын бодит үзэлт (views), лайк (likes),
+    сэтгэгдэл (comments), видео төлвийг шууд татаж авах
+    """
+    all_pages = database.get_connected_pages()
+    tok = None
+    if page_id:
+        p = next((x for x in all_pages if str(x["page_id"]) == str(page_id)), None)
+        if p:
+            tok = p["access_token"]
+    if not tok:
+        tok = all_pages[0]["access_token"]
+
+    clean_post_id = post_id.split("_")[-1] if "_" in post_id else post_id
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            url = f"https://graph.facebook.com/v21.0/{clean_post_id}"
+            params = {
+                "fields": "id,views,likes.summary(true),comments.summary(true),status",
+                "access_token": tok
+            }
+            res = await client.get(url, params=params)
+            if res.status_code == 200:
+                data = res.json()
+                views = data.get("views", 0)
+                likes = data.get("likes", {}).get("summary", {}).get("total_count", 0)
+                comments = data.get("comments", {}).get("summary", {}).get("total_count", 0)
+                v_status = data.get("status", {}).get("video_status", "ready")
+                return {
+                    "success": True,
+                    "post_id": clean_post_id,
+                    "views": views,
+                    "likes": likes,
+                    "comments": comments,
+                    "video_status": v_status
+                }
+            else:
+                return {"success": False, "error": res.text, "views": 0, "likes": 0, "comments": 0}
+        except Exception as e:
+            return {"success": False, "error": str(e), "views": 0, "likes": 0, "comments": 0}
+
+
+class ReCrosspostRequest(BaseModel):
+    video_id: str
+    target_page_ids: List[str]
+    message: Optional[str] = ""
+    boost_preset: Optional[str] = "standard"
+    auto_create_rule: Optional[bool] = True
+
+@app.post("/api/crosspost-existing")
+@app.post("/crosspost-existing")
+async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
+    """
+    Өмнө нийтлэгдсэн бичлэгийг дахин татаж хуулахгүйгээр Facebook Crossposting API-аар
+    сонгосон бусад хуудсуудад 0.5 секундэд шууд нийтлэх
+    """
+    all_pages = database.get_connected_pages()
+    clean_vid_id = payload.video_id.split("_")[-1] if "_" in payload.video_id else payload.video_id
+
+    msg = (payload.message or "").strip()
+    if not msg:
+        p_tok = all_pages[0]["access_token"]
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                g_res = await client.get(f"https://graph.facebook.com/v21.0/{clean_vid_id}", params={"fields": "description", "access_token": p_tok})
+                if g_res.status_code == 200:
+                    msg = g_res.json().get("description", "")
+            except Exception:
+                pass
+    if not msg:
+        msg = "🎬✨ ШИНЭ КИНО: Үзэх холбоос: https://www.huree.site (1 кино 3,900₮ | Бүх кино 15,900₮ QPay)"
+
+    target_ids = [str(x) for x in payload.target_page_ids]
+    if "all" in target_ids:
+        pages_to_post = all_pages
+    else:
+        pages_to_post = [p for p in all_pages if str(p["page_id"]) in target_ids]
+
+    results = []
+    settings = database.get_settings()
+    pub_reply = settings.get("default_public_reply", "Сайн байна уу! Чатаар дэлгэрэнгүй мэдээлэл болон үзэх линк илгээлээ.")
+    priv_reply = settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for p in pages_to_post:
+            r_pid = str(p["page_id"])
+            r_name = p["page_name"]
+            r_tok = p["access_token"]
+
+            try:
+                cp_res = await client.post(
+                    f"https://graph.facebook.com/v21.0/{r_pid}/videos",
+                    data={
+                        "crossposted_video_id": clean_vid_id,
+                        "description": msg,
+                        "access_token": r_tok
+                    }
+                )
+                cp_data = cp_res.json()
+                if cp_res.status_code == 200 and ("id" in cp_data or "post_id" in cp_data):
+                    r_post_id = str(cp_data.get("post_id") or cp_data.get("id"))
+                    r_post_url = f"https://www.facebook.com/reel/{r_post_id}/"
+                    database.save_published_post(
+                        page_id=r_pid,
+                        page_name=r_name,
+                        post_id=r_post_id,
+                        post_url=r_post_url,
+                        message=msg,
+                        media_type="video",
+                        boost_command=payload.boost_preset or "standard"
+                    )
+                    if payload.auto_create_rule:
+                        database.save_post_rule({
+                            "post_id": r_post_id,
+                            "post_name": f"{r_name} - Crosspost ({datetime.now().strftime('%m/%d %H:%M')})",
+                            "keywords": "үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,сонирхож,байна,багц,qpay",
+                            "public_reply_template": pub_reply,
+                            "private_reply_template": priv_reply,
+                            "use_ai": 1,
+                            "is_active": 1
+                        })
+                    results.append({"success": True, "page_name": r_name, "page_id": r_pid, "post_id": r_post_id, "post_url": r_post_url})
+                else:
+                    results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": cp_data.get("error", {}).get("message", "Crosspost failed")})
+            except Exception as e:
+                results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": str(e)})
+
+    return {
+        "status": "ok",
+        "published_count": sum(1 for r in results if r.get("success")),
+        "total_targets": len(results),
+        "results": results
     }
 
 

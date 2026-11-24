@@ -1051,6 +1051,7 @@
         btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> AI Шинжилгээ хийж хариу үүсгэх`;
       }
     }
+
     function openRuleModal() {
       document.getElementById('rule-id').value = '';
       document.getElementById('rule-form').reset();
@@ -1526,7 +1527,7 @@
       // Check if URL is entered
       const url = document.getElementById('pub-media-url').value.trim();
       if (type === 'image' && url) {
-        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'p-4 text-xs text-rose-500\\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
       } else if (type === 'video' && url) {
         box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
       } else {
@@ -1647,10 +1648,10 @@
               });
 
               const data = await finishRes.json();
+
+            
               progressContainer.classList.add('hidden');
-              const card = document.getElementById('publish-result-card');
-              card.classList.remove('hidden');
-              renderPublishResults(data, caption);
+              displayPublishResults(data, caption);
               loadPublishedPostsHistory();
               btn.disabled = false;
               btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
@@ -1720,16 +1721,33 @@
 
         const data = await res.json();
         progressContainer.classList.add('hidden');
-        const card = document.getElementById('publish-result-card');
-        card.classList.remove('hidden');
+        displayPublishResults(data, caption);
 
-        document.getElementById('publish-result-summary').innerText = 
-          `${data.published_count}/${data.total_targets} хуудсанд амжилттай нийтлэгдлээ!`;
-        document.getElementById('publish-result-badge').innerText = 
-          `${data.published_count} Facebook Post Created`;
+        showToast(`${data.published_count} хуудсанд зэрэг нийтлэгдлээ!`);
+        loadPublishedPosts();
+        loadRules();
+        loadStats();
+      } catch (err) {
+        alert('Нийтлэх явцад алдаа гарлаа: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+      }
+    }
 
-        // Render direct links
-        const linksContainer = document.getElementById('publish-result-links');
+    function displayPublishResults(data, caption) {
+      const card = document.getElementById('publish-result-card');
+      if (!card) return;
+      card.classList.remove('hidden');
+
+      document.getElementById('publish-result-summary').innerText = 
+        `${data.published_count}/${data.total_targets} хуудсанд амжилттай нийтлэгдлээ!`;
+      document.getElementById('publish-result-badge').innerText = 
+        `${data.published_count} Facebook Post Created`;
+
+      // Render direct links
+      const linksContainer = document.getElementById('publish-result-links');
+      if (linksContainer && data.results) {
         linksContainer.innerHTML = data.results.map(r => `
           <div class="flex items-center justify-between p-3 rounded-xl border ${r.success ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'} text-xs">
             <div class="flex items-center space-x-2 truncate">
@@ -1745,32 +1763,22 @@
             `}
           </div>
         `).join('');
+      }
 
-        // Render Group Share Buttons
-        const sharesContainer = document.getElementById('post-group-shares-container');
-        if (data.group_shares && data.group_shares.length > 0) {
-          sharesContainer.innerHTML = data.group_shares.map(g => `
-            <button type="button" onclick="shareToFacebookGroup('${g.group_url}', '${encodeURIComponent(data.first_post_url)}', '${encodeURIComponent(caption)}')" class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between group transition">
-              <div class="truncate">
-                <span class="block text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">${g.name}</span>
-                <span class="block text-[10px] text-slate-400">${g.category}</span>
-              </div>
-              <span class="px-2 py-1 bg-blue-100 group-hover:bg-blue-600 group-hover:text-white text-blue-700 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
-                <i class="fa-solid fa-share mr-1"></i> Түгээх
-              </span>
-            </button>
-          `).join('');
-        }
-
-        showToast(`${data.published_count} хуудсанд зэрэг нийтлэгдлээ!`);
-        loadPublishedPosts();
-        loadRules();
-        loadStats();
-      } catch (err) {
-        alert('Нийтлэх явцад алдаа гарлаа: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+      // Render Group Share Buttons
+      const sharesContainer = document.getElementById('post-group-shares-container');
+      if (sharesContainer && data.group_shares && data.group_shares.length > 0) {
+        sharesContainer.innerHTML = data.group_shares.map(g => `
+          <button type="button" onclick="shareToFacebookGroup('${g.group_url}', '${encodeURIComponent(data.first_post_url)}', '${encodeURIComponent(caption)}')" class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between group transition">
+            <div class="truncate">
+              <span class="block text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">${g.name}</span>
+              <span class="block text-[10px] text-slate-400">${g.category}</span>
+            </div>
+            <span class="px-2 py-1 bg-blue-100 group-hover:bg-blue-600 group-hover:text-white text-blue-700 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
+              <i class="fa-solid fa-share mr-1"></i> Түгээх
+            </span>
+          </button>
+        `).join('');
       }
     }
 

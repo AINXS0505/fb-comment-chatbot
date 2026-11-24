@@ -136,3 +136,78 @@ def fallback_rule_based_response(
         "public_reply": public_template or f"Сайн байна уу {sender_name}! Кино үзэх холбоос болон дэлгэрэнгүй мэдээллийг чатаар илгээлээ. Та чатаа шалгаарай 🍿✨",
         "private_reply": private_template or HUREE_PROMO_TEXT
     }
+
+async def craft_post_caption(
+    movie_title: str,
+    genre: str,
+    extra_details: str,
+    settings: Dict[str, str]
+) -> Dict[str, Any]:
+    """
+    Facebook хуудас болон группүүдэд зориулсан вирал, сонирхол татахуйц киноны пост текстийг
+    Gemini 3.5 AI-аар бэлтгэх.
+    """
+    api_key = settings.get("gemini_api_key", "").strip()
+    model_name = settings.get("gemini_model", "gemini-3.5-flash-lite")
+
+    fallback_caption = (
+        f"🎬✨ ШИНЭ КИНО: {movie_title or 'Онцлох бүтээл'}\n\n"
+        f"Үзэгчдийг байлдан дагуулж буй шилдэг киног бүрэн эхээр нь, чанарын өндөр түвшинд Монгол хэлээр шууд үзээрэй! 🍿\n\n"
+        f"👉 Шууд үзэх холбоос: https://www.huree.site\n"
+        f"🔹 1 кино — 3,900₮\n"
+        f"🔹 Бүх кино — 15,900₮ (1000+ кино бүгд багтсан)\n"
+        f"⚡ QPay-ээр шуурхай төлөөд эрхээ шууд нээнэ үү!\n\n"
+        f"#HureeKino #МонголКино #ШинэКино #MiniDrama #hureesite"
+    )
+
+    if not api_key:
+        return {"caption": fallback_caption, "variations": [fallback_caption]}
+
+    prompt = f"""
+Та Facebook-ийн 6 хуудас болон олон нийтийн группүүдэд зориулсан шилдэг кино/драма сурталчилгааны пост бичигч мэргэжлийн маркетер юм.
+Дараах киноны мэдээллээр Facebook-т өндөр хандалт (viral reach, share, comment) авах, сэтгэл татам монгол хэл дээрх постны тайлбар бичнэ үү.
+
+[КИНОНЫ НЭР]: {movie_title}
+[ТӨРӨЛ / ЖАНР]: {genre or 'Драма, Романс, Адал явдалт'}
+[НЭМЭЛТ МЭДЭЭЛЭЛ / ТОВЧ АГУУЛГА]: {extra_details}
+
+[ШУУД ОРУУЛАХ ШААРДЛАГА]:
+- Вэбсайт линк: https://www.huree.site
+- Үнэ: 1 кино — 3,900₮, Бүх кино — 15,900₮
+- QPay түргэн төлбөр, 1000+ кино бэлэн байгаа тухай дурдах
+- Сонирхол татах гол дэгээ (hook), оновчтой эможинууд, коммент бичих уриалга (CTA)
+- Төгсгөлд нь 4-5 холбогдох hashtag оруулах.
+
+JSON форматаар буцаана уу:
+{{
+  "main_caption": "Бүх шаардлагыг хангасан шилдэг пост тайлбар",
+  "short_caption": "Богино, хурц, видео/reel-д тохирсон тайлбар"
+}}
+"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "responseMimeType": "application/json"
+                }
+            }
+            resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                text_content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if text_content.startswith("```json"):
+                    text_content = text_content[7:]
+                if text_content.endswith("```"):
+                    text_content = text_content[:-3]
+                parsed = json.loads(text_content.strip())
+                return {
+                    "caption": parsed.get("main_caption") or fallback_caption,
+                    "short_caption": parsed.get("short_caption") or fallback_caption
+                }
+    except Exception as e:
+        print(f"craft_post_caption error: {e}")
+
+    return {"caption": fallback_caption, "short_caption": fallback_caption}

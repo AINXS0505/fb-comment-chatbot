@@ -970,6 +970,168 @@
       }
     }
 
+    
+    async function loadPublisherPages() {
+      try {
+        const res = await fetch('/api/pages');
+        const pages = await res.json();
+        const container = document.getElementById('pub-pages-list') || document.getElementById('publisher-pages-list');
+        if (!container) return;
+        if (!pages || pages.length === 0) {
+          container.innerHTML = '<p class="text-sm text-slate-400">Холбогдсон хуудас олдсонгүй</p>';
+          return;
+        }
+        container.innerHTML = pages.map(p => `
+          <label class="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+            <input type="checkbox" name="pub_pages" value="${p.page_id}" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+            <div class="flex-1 truncate">
+              <span class="text-sm font-semibold text-slate-800">${p.page_name}</span>
+              <p class="text-xs text-slate-400 font-mono">ID: ${p.page_id}</p>
+            </div>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </label>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadPublisherGroups() {
+      try {
+        const res = await fetch('/api/groups');
+        const groups = await res.json();
+        const container = document.getElementById('pub-groups-list');
+        if (!container) return;
+        if (!groups || groups.length === 0) {
+          container.innerHTML = '<p class="text-sm text-slate-400">Групп олдсонгүй</p>';
+          return;
+        }
+        container.innerHTML = groups.map(g => `
+          <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50">
+            <div class="flex-1 truncate">
+              <span class="text-sm font-semibold text-slate-800">${g.group_name}</span>
+              <p class="text-xs text-slate-500">${g.category || 'Групп'}</p>
+            </div>
+            <a href="${g.group_url}" target="_blank" class="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md">
+              <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Нээх
+            </a>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const loadGroups = loadPublisherGroups;
+
+    async function loadPublishedPosts() {
+      try {
+        const res = await fetch('/api/published-posts');
+        const posts = await res.json();
+        const tbody = document.getElementById('published-posts-table');
+        if (!tbody) return;
+        if (!posts || posts.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Нийтлэгдсэн пост одоогоор алга байна</td></tr>';
+          return;
+        }
+        tbody.innerHTML = posts.map(item => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-6 py-4 text-sm font-medium text-slate-900">${item.page_name || item.page_id}</td>
+            <td class="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">${item.message || '-'}</td>
+            <td class="px-6 py-4 text-sm text-slate-500 font-mono text-xs">${item.fb_post_id}</td>
+            <td class="px-6 py-4 text-sm text-slate-500">${item.published_at || item.created_at || ''}</td>
+            <td class="px-6 py-4 text-sm">
+              ${item.post_url ? `<a href="${item.post_url}" target="_blank" class="text-blue-600 hover:underline">Үзэх</a>` : '-'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function handleGenerateAiCaption() {
+      const promptInput = document.getElementById('ai-caption-prompt');
+      const prompt = promptInput ? promptInput.value : '';
+      const btn = document.getElementById('btn-generate-caption');
+      if (!prompt.trim()) {
+        alert('Постын сэдэв эсвэл драманы нэрийг оруулна уу!');
+        return;
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI бичиж байна...';
+      }
+      try {
+        const res = await fetch('/api/craft-caption', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ prompt: prompt, tone: 'viral' })
+        });
+        const data = await res.json();
+        if (data.caption) {
+          const msgEl = document.getElementById('pub-message');
+          if (msgEl) msgEl.value = data.caption;
+        } else {
+          alert('AI тайлбар үүсгэхэд алдаа гарлаа: ' + (data.error || 'Тодорхойгүй'));
+        }
+      } catch (e) {
+        alert('Хүсэлт илгээхэд алдаа: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI Тайлбар Үүсгэх';
+        }
+      }
+    }
+
+    async function handleMultiPublish(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const message = (document.getElementById('pub-message') || {}).value || '';
+      const link = (document.getElementById('pub-link') || {}).value || '';
+      const checkedBoxes = document.querySelectorAll('input[name="pub_pages"]:checked');
+      const pageIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (pageIds.length === 0) {
+        alert('Ядаж 1 Facebook хуудас сонгоно уу!');
+        return;
+      }
+      if (!message.trim() && !link.trim()) {
+        alert('Постын текст эсвэл линк оруулна уу!');
+        return;
+      }
+
+      const btn = document.getElementById('btn-multi-publish');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Нийтэлж байна...';
+      }
+
+      try {
+        const res = await fetch('/api/publish-multi', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ page_ids: pageIds, message: message, link: link })
+        });
+        const data = await res.json();
+        alert(`Амжилттай: ${data.success_count || 0} хуудсанд нийтлэгдлээ!`);
+        loadPublishedPosts();
+      } catch (e) {
+        alert('Нийтлэх явцад алдаа гарлаа: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Сонгосон бүх хуудсанд нийтлэх';
+        }
+      }
+    }
+
+    function copyPostText() {
+      const msg = (document.getElementById('pub-message') || {}).value || '';
+      if (!msg) return;
+      navigator.clipboard.writeText(msg);
+      showToast('Текст хуулагдлаа! Одоо группүүд рүү орж нийтэлнэ үү.');
+    }
+
     // Init
     window.addEventListener('DOMContentLoaded', refreshData);
   </script>

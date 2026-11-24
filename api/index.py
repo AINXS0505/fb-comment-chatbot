@@ -297,6 +297,119 @@ async def update_settings(payload: Dict[str, Any]):
     database.update_settings(payload)
     return {"status": "ok"}
 
+# --- MOBILE REMOTE COMMAND & AUTO-SYNC ENDPOINTS ---
+@app.get("/api/sync-comments")
+@app.post("/api/sync-comments")
+async def sync_recent_comments(limit: int = 5):
+    """
+    Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж 
+    хариулаагүй үлдсэн комментууд руу шууд хариу илгээх функц
+    """
+    settings = database.get_settings()
+    pages = database.get_connected_pages()
+    results = []
+
+    default_pub = settings.get("default_public_reply", ai_service.HUREE_COMMENT_REPLY)
+    default_priv = settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for p in pages:
+            page_id = p["page_id"]
+            page_token = p["access_token"]
+            page_name = p["page_name"]
+
+            try:
+                # 1. Сүүлийн постуудыг авах
+                posts_res = await client.get(
+                    f"https://graph.facebook.com/v19.0/{page_id}/posts",
+                    params={"limit": limit, "access_token": page_token}
+                )
+                posts = posts_res.json().get("data", [])
+
+                for post in posts:
+                    post_id = post["id"]
+                    # 2. Тухайн постын комментуудыг авах
+                    comm_res = await client.get(
+                        f"https://graph.facebook.com/v19.0/{post_id}/comments",
+                        params={"limit": 10, "access_token": page_token}
+                    )
+                    comments = comm_res.json().get("data", [])
+
+                    for c in comments:
+                        cid = c["id"]
+                        msg = c.get("message", "").strip()
+                        sender = c.get("from", {})
+                        sid = str(sender.get("id") or "")
+                        sname = sender.get("name", "Үйлчлүүлэгч")
+
+                        # Өөрийн хуудасны хариуг алгасах
+                        if "huree.site" in msg.lower() or "чатаар тань илгээлээ" in msg:
+                            continue
+
+                        # Хэрэв өмнө нь боловсруулагдаагүй бол шууд хариулах
+                        if not database.is_comment_processed(cid):
+                            # Нийтийн коммент хариу
+                            await facebook_service.send_public_comment_reply(cid, default_pub, page_token)
+                            # Messenger чат хариу
+                            await facebook_service.send_private_messenger_reply(cid, default_priv, page_token)
+
+                            database.log_comment(
+                                comment_id=cid,
+                                post_id=post_id,
+                                sender_id=sid,
+                                sender_name=sname,
+                                comment_text=msg,
+                                sentiment="positive",
+                                intent="movie_link",
+                                public_reply=default_pub,
+                                private_reply=default_priv,
+                                phone=ai_service.extract_phone_number(msg)
+                            )
+                            results.append({"comment_id": cid, "message": msg, "status": "replied"})
+            except Exception as e:
+                print(f"Sync error for {page_name}: {e}")
+
+    return {"status": "ok", "new_replies_sent": len(results), "details": results}
+
+@app.get("/api/command")
+@app.post("/api/command")
+async def execute_mobile_command(
+    set_price_single: Optional[str] = None,
+    set_price_all: Optional[str] = None,
+    set_link: Optional[str] = None,
+    set_public_reply: Optional[str] = None,
+    bot_enabled: Optional[str] = None
+):
+    """
+    Гар утаснаас URL эсвэл параметрээр комманд өгч тохиргоог шууд өөрчлөх
+    """
+    settings = database.get_settings()
+    updates = {}
+
+    if bot_enabled is not None:
+        updates["bot_enabled"] = "true" if bot_enabled.lower() in ["true", "1", "on"] else "false"
+
+    if set_public_reply:
+        updates["default_public_reply"] = set_public_reply
+
+    if set_price_single or set_price_all or set_link:
+        link = set_link or "https://www.huree.site"
+        p_single = set_price_single or "3,900₮"
+        p_all = set_price_all or "15,900₮"
+
+        updates["default_private_reply"] = (
+            f"Сайн байна уу! 🎬🍿\n\n"
+            f"{link} энэ сайтаар ороод бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино Хүрээ дээр бий!\n\n"
+            f"🔹 1 кино — {p_single}\n"
+            f"🔹 Бүх кино — {p_all}\n\n"
+            f"QPay-ээр төлөөд үзэх эрхээ шууд нээгээрэй. Өдөр бүр шинэ кино нэмэгдэнэ! ✨"
+        )
+
+    if updates:
+        database.update_settings(updates)
+
+    return {"status": "ok", "applied_commands": updates, "current_settings": database.get_settings()}
+
 class SimulateRequest(BaseModel):
     sender_name: str
     post_name: str

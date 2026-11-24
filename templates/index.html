@@ -55,6 +55,9 @@
       <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600 flex items-center gap-2">
         <i class="fa-solid fa-chart-pie"></i> Хяналтын самбар
       </button>
+      <button onclick="switchTab('mobile-control')" id="tab-btn-mobile-control" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-mobile-screen-button text-indigo-600"></i> Гар утасны комманд
+      </button>
       <button onclick="switchTab('rules')" id="tab-btn-rules" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
         <i class="fa-solid fa-sliders"></i> Постын тохиргоо
       </button>
@@ -67,6 +70,61 @@
       <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
         <i class="fa-solid fa-gear"></i> Систем & AI Тохиргоо
       </button>
+    </div>
+
+    <!-- TAB: MOBILE REMOTE COMMANDS -->
+    <div id="tab-mobile-control" class="tab-content hidden space-y-6 max-w-3xl mx-auto">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl shadow-md">
+            <i class="fa-solid fa-mobile-screen"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Утаснаас комманд өгч удирдах төв</h2>
+            <p class="text-xs text-slate-500">Та гар утаснаасаа хаанаас ч ботын үнэ, линк, текстийг 1 товшилтоор солих боломжтой</p>
+          </div>
+        </div>
+
+        <!-- 1-Tap Sync Button -->
+        <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="font-bold text-sm text-indigo-950">⚡ Сүүлийн комментуудыг шалгаж шууд хариулах</h4>
+            <p class="text-xs text-indigo-700">Facebook дээр ирсэн хариулаагүй бүх коммент руу коммент болон Messenger чатаар зэрэг хариу илгээнэ.</p>
+          </div>
+          <button onclick="runAutoSync()" id="btn-sync" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm transition">
+            <i class="fa-solid fa-rotate mr-1"></i> Одоо хариулах
+          </button>
+        </div>
+
+        <!-- Fast Price & Link Modifier -->
+        <form onsubmit="saveMobileCommand(event)" class="space-y-4 pt-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Шуурхай үнэ & линк өөрчлөх</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">1 киноны үнэ</label>
+              <input type="text" id="cmd-price-single" value="3,900₮" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Бүх киноны үнэ (Багц)</label>
+              <input type="text" id="cmd-price-all" value="15,900₮" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Вэбсайт линк</label>
+            <input type="text" id="cmd-link" value="https://www.huree.site" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono text-indigo-600">
+          </div>
+          <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl text-sm transition shadow-sm">
+            Үнэ & Мэдээллийг шинэчлэх
+          </button>
+        </form>
+
+        <!-- Command URL Box -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+          <span class="text-xs font-semibold text-slate-700 block">Утасны Bookmark / Шууд хандах URL:</span>
+          <p class="text-xs text-slate-500">Энэ хаягийг утсан дээрээ Bookmark эсвэл Home Screen дээрээ нэмснээр хүссэн үедээ 1 секундийн дотор удирдах боломжтой:</p>
+          <code class="block bg-white p-2 rounded border border-slate-200 text-xs text-indigo-600 font-mono truncate">https://fb-comment-chatbot.vercel.app</code>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 1: ANALYTICS & LOGS -->
@@ -677,6 +735,39 @@
 
     function exportLeadsCSV() {
       window.location.href = '/api/leads/export-csv';
+    }
+
+    async function runAutoSync() {
+      const btn = document.getElementById('btn-sync');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Шалгаж байна...`;
+      try {
+        const res = await fetch('/api/sync-comments', { method: 'POST' });
+        const data = await res.json();
+        showToast(`${data.new_replies_sent} шинэ комментод амжилттай хариуллаа!`);
+        refreshData();
+      } catch (e) {
+        alert('Sync алдаа: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-rotate mr-1"></i> Одоо хариулах`;
+      }
+    }
+
+    async function saveMobileCommand(e) {
+      e.preventDefault();
+      const p1 = document.getElementById('cmd-price-single').value;
+      const pAll = document.getElementById('cmd-price-all').value;
+      const link = document.getElementById('cmd-link').value;
+
+      try {
+        const res = await fetch(`/api/command?set_price_single=${encodeURIComponent(p1)}&set_price_all=${encodeURIComponent(pAll)}&set_link=${encodeURIComponent(link)}`);
+        const data = await res.json();
+        showToast('Үнэ & линкийн мэдээлэл шинэчлэгдлээ!');
+        refreshData();
+      } catch (e) {
+        alert('Алдаа: ' + e.message);
+      }
     }
 
     // Init

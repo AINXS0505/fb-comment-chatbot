@@ -121,7 +121,6 @@ async def analyze_and_generate_replies(
         custom_private_template or settings.get("default_private_reply", HUREE_PROMO_TEXT)
     )
 
-
 def fallback_rule_based_response(
     comment_text: str,
     sender_name: str,
@@ -139,35 +138,87 @@ def fallback_rule_based_response(
 
 async def craft_post_caption(
     movie_title: str,
+
+
     genre: str,
     extra_details: str,
     settings: Dict[str, str]
 ) -> Dict[str, Any]:
     """
     Facebook хуудас болон группүүдэд зориулсан вирал, сонирхол татахуйц киноны пост текстийг
-    Gemini 3.5 AI-аар бэлтгэх.
+    Gemini AI-аар эсвэл өндөр үр дүнтэй драма загваруудаар бэлтгэх.
     """
     api_key = settings.get("gemini_api_key", "").strip()
-    model_name = settings.get("gemini_model", "gemini-3.5-flash-lite")
+    model_name = settings.get("gemini_model", "gemini-1.5-flash")
+    clean_title = movie_title.strip() if movie_title else "Онцлох Шинэ Драма"
 
-    fallback_caption = (
-        f"🎬✨ ШИНЭ КИНО: {movie_title or 'Онцлох бүтээл'}\n\n"
-        f"Үзэгчдийг байлдан дагуулж буй шилдэг киног бүрэн эхээр нь, чанарын өндөр түвшинд Монгол хэлээр шууд үзээрэй! 🍿\n\n"
-        f"👉 Шууд үзэх холбоос: https://www.huree.site\n"
-        f"🔹 1 кино — 3,900₮\n"
-        f"🔹 Бүх кино — 15,900₮ (1000+ кино бүгд багтсан)\n"
-        f"⚡ QPay-ээр шуурхай төлөөд эрхээ шууд нээнэ үү!\n\n"
-        f"#HureeKino #МонголКино #ШинэКино #MiniDrama #hureesite"
-    )
+    # Pre-crafted viral templates for popular drama genres
+    genre_lower = (genre or "").lower()
+    
+    if "тэрбумтан" in genre_lower or "өшөө" in genre_lower or "billionaire" in genre_lower:
+        hook_1 = (
+            f"🎬🔥 ШИНЭ КИНО: \"{clean_title}\"\n\n"
+            f"\"Намайг ядуу гэж голж хаясан хүмүүс өнөөдөр өмнө минь сөгдөх болно...\" 👑\n\n"
+            f"Үйлийн үр, эрх мэдлийн тэмцэл, хэний ч төсөөлөөгүй гал гарсан эргэлтүүдээр дүүрэн шилдэг мини цувралыг монгол дуу оруулгатайгаар бүтэн эхээр нь шууд үзээрэй! 🍿✨\n\n"
+            f"👉 Шууд үзэх холбоос: https://www.huree.site\n"
+            f"🔹 1 кино — 3,900₮\n"
+            f"🔹 Бүх кино — 15,900₮ (1000+ кино бүгд багтсан)\n"
+            f"⚡ QPay-ээр 2 секундэд төлөөд эрхээ шууд нээнэ үү!\n\n"
+            f"💬 Доор 'Үзэх' гэж коммент үлдээвэл манай AI бот линкийг чатаар шууд илгээнэ!\n\n"
+            f"#HureeKino #МонголКино #ШинэКино #MiniDrama #Тэрбумтан #hureesite"
+        )
+        hook_2 = (
+            f"⚡️ Нууц тэрбумтаны гэнэтийн эргэлт: \"{clean_title}\"\n\n"
+            f"Даруухан хувцасны цаана нуугдсан жинхэнэ эзэн хэн бэ? Үнэнийг мэдсэн тэдний царай ямар болох бол? 😱\n\n"
+            f"🎬 1 анги нь ердөө 2 минут үргэлжлэх хамгийн донтуулагч цуврал бэлэн боллоо!\n"
+            f"👉 Шууд үзэх: https://www.huree.site (QPay 3,900₮ / Бүх кино 15,900₮)\n\n"
+            f"#MiniDrama #HureeSite #ӨшөөАвалт #ШинэКино"
+        )
+    elif "салалт" in genre_lower or "хүүхэд" in genre_lower or "divorce" in genre_lower:
+        hook_1 = (
+            f"🎬💔 ШИНЭ КИНО: \"{clean_title}\"\n\n"
+            f"\"Хөөгдөж гарсан эхнэр 5 жилийн дараа тэрбумтаны компанийг худалдаж авахаар эргэн ирлээ... Харин түүний хөтөлж яваа хүү хэний хүүхэд вэ?\" 🥺💥\n\n"
+            f"Сэтгэл хөдөлгөм, нулимс дуслуулам шилдэг хайрын драмыг чанарын өндөр түвшинд Монгол хэлээр шууд үзээрэй! 🍿\n\n"
+            f"👉 Шууд үзэх: https://www.huree.site\n"
+            f"🔹 1 кино — 3,900₮ | Бүх кино — 15,900₮ (1000+ кино)\n"
+            f"⚡ QPay шууд төлөлттэй!\n\n"
+            f"💬 Доор 'Үзэх' гэж коммент бичээрэй, линкийг чатаар илгээнэ.\n\n"
+            f"#HureeKino #МонголКино #Драма #MiniDrama #Салалт #hureesite"
+        )
+        hook_2 = (
+            f"💔 Нулимс дуслуулам бодит түүх: \"{clean_title}\"\n\n"
+            f"Амьдралын хатуу шуурганд шалгарсан эхийн хайр ба өшөө авалт... 🎬 Бүрэн эхээр нь үзэх: https://www.huree.site (1 кино 3,900₮, Бүх кино 15,900₮ QPay)"
+        )
+    else:
+        hook_1 = (
+            f"🎬✨ ШИНЭ КИНО: \"{clean_title}\"\n\n"
+            f"Үзэгчдийг байлдан дагуулж буй шилдэг киног бүрэн эхээр нь, чанарын өндөр түвшинд Монгол хэлээр шууд үзээрэй! 🍿\n\n"
+            f"👉 Шууд үзэх холбоос: https://www.huree.site\n"
+            f"🔹 1 кино — 3,900₮\n"
+            f"🔹 Бүх кино — 15,900₮ (1000+ кино бүгд багтсан)\n"
+            f"⚡ QPay-ээр шуурхай төлөөд эрхээ шууд нээнэ үү!\n\n"
+            f"💬 Доор 'Үзэх' гэж бичвэл чатаар линк шууд илгээнэ үү!\n\n"
+            f"#HureeKino #МонголКино #ШинэКино #MiniDrama #hureesite"
+        )
+        hook_2 = (
+            f"🍿 Шинэ мини цуврал нээгдлээ: \"{clean_title}\"\n"
+            f"👉 https://www.huree.site дээр QPay-ээр 3,900₮ төлөөд бүрэн эхээр нь үзээрэй!"
+        )
+
+    variations = [
+        {"title": "🔥 Вирал Дэгээ (Clickbait & Шоконд оруулах)", "text": hook_1},
+        {"title": "⚡ Товч & Шуурхай Reel хувилбар", "text": hook_2},
+        {"title": "💳 Шууд Борлуулалт & QPay Уриалга", "text": f"🎬 \"{clean_title}\" кино гарлаа! Үзэх линк: https://www.huree.site (1 кино 3,900₮ | Бүх 1000+ кино 15,900₮ QPay). Коммент дээр 'Үзэх' гэж бичээрэй!"}
+    ]
 
     if not api_key:
-        return {"caption": fallback_caption, "variations": [fallback_caption]}
+        return {"caption": hook_1, "short_caption": hook_2, "variations": variations}
 
     prompt = f"""
 Та Facebook-ийн 6 хуудас болон олон нийтийн группүүдэд зориулсан шилдэг кино/драма сурталчилгааны пост бичигч мэргэжлийн маркетер юм.
 Дараах киноны мэдээллээр Facebook-т өндөр хандалт (viral reach, share, comment) авах, сэтгэл татам монгол хэл дээрх постны тайлбар бичнэ үү.
 
-[КИНОНЫ НЭР]: {movie_title}
+[КИНОНЫ НЭР]: {clean_title}
 [ТӨРӨЛ / ЖАНР]: {genre or 'Драма, Романс, Адал явдалт'}
 [НЭМЭЛТ МЭДЭЭЛЭЛ / ТОВЧ АГУУЛГА]: {extra_details}
 
@@ -175,13 +226,14 @@ async def craft_post_caption(
 - Вэбсайт линк: https://www.huree.site
 - Үнэ: 1 кино — 3,900₮, Бүх кино — 15,900₮
 - QPay түргэн төлбөр, 1000+ кино бэлэн байгаа тухай дурдах
-- Сонирхол татах гол дэгээ (hook), оновчтой эможинууд, коммент бичих уриалга (CTA)
+- Сонирхол татах гол дэгээ (hook), оновчтой эможинууд, коммент бичих уриалга (CTA: Доор 'Үзэх' гэж бичээрэй)
 - Төгсгөлд нь 4-5 холбогдох hashtag оруулах.
 
 JSON форматаар буцаана уу:
 {{
-  "main_caption": "Бүх шаардлагыг хангасан шилдэг пост тайлбар",
-  "short_caption": "Богино, хурц, видео/reel-д тохирсон тайлбар"
+  "main_caption": "Бүх шаардлагыг хангасан шилдэг урт пост тайлбар",
+  "short_caption": "Богино, хурц, видео/reel-д тохирсон тайлбар",
+  "sales_caption": "QPay борлуулалт татсан хувилбар"
 }}
 """
     try:
@@ -203,11 +255,19 @@ JSON форматаар буцаана уу:
                 if text_content.endswith("```"):
                     text_content = text_content[:-3]
                 parsed = json.loads(text_content.strip())
+                m_cap = parsed.get("main_caption") or hook_1
+                s_cap = parsed.get("short_caption") or hook_2
+                sales_cap = parsed.get("sales_caption") or variations[2]["text"]
                 return {
-                    "caption": parsed.get("main_caption") or fallback_caption,
-                    "short_caption": parsed.get("short_caption") or fallback_caption
+                    "caption": m_cap,
+                    "short_caption": s_cap,
+                    "variations": [
+                        {"title": "🔥 Вирал Дэгээ (AI зохиосон шилдэг хувилбар)", "text": m_cap},
+                        {"title": "⚡ Товч & Хурц Reel тайлбар", "text": s_cap},
+                        {"title": "💳 Шууд Борлуулалт & QPay", "text": sales_cap}
+                    ]
                 }
     except Exception as e:
         print(f"craft_post_caption error: {e}")
 
-    return {"caption": fallback_caption, "short_caption": fallback_caption}
+    return {"caption": hook_1, "short_caption": hook_2, "variations": variations}

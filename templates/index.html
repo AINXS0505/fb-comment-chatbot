@@ -497,7 +497,6 @@
         </form>
 
         <!-- Command URL Box -->
-        <!-- Command URL Box -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
           <span class="text-xs font-semibold text-slate-700 block">Утасны Bookmark / Шууд хандах URL:</span>
           <p class="text-xs text-slate-500">Энэ хаягийг утсан дээрээ Bookmark эсвэл Home Screen дээрээ нэмснээр хүссэн үедээ 1 секундийн дотор удирдах боломжтой:</p>
@@ -800,9 +799,6 @@
         </div>
       </form>
     </div>
-
-    
-    </div>
   </div>
 
   <!-- Notification Toast -->
@@ -1055,7 +1051,6 @@
         btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> AI Шинжилгээ хийж хариу үүсгэх`;
       }
     }
-
     function openRuleModal() {
       document.getElementById('rule-id').value = '';
       document.getElementById('rule-form').reset();
@@ -1327,6 +1322,111 @@
       });
     }
 
+    // Direct Resumable Chunked Upload to Facebook (Supports 500MB+ with Zero Server Limits)
+    async function uploadVideoDirectToFacebookChunked(file, onProgress) {
+      const startRes = await fetch('/api/video-upload/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_size: file.size })
+      });
+      if (!startRes.ok) {
+        const errJson = await startRes.json();
+        throw new Error(errJson.detail || 'Facebook Upload session эхлүүлэхэд алдаа гарлаа');
+      }
+      const session = await startRes.json();
+      const pageId = session.page_id;
+      const accessToken = session.access_token;
+      const uploadSessionId = session.upload_session_id;
+      const videoId = session.video_id;
+
+      let startOffset = session.start_offset || 0;
+      let endOffset = session.end_offset || 10485760;
+
+      const startTime = Date.now();
+      let lastLoaded = 0;
+      let lastTime = startTime;
+
+      while (startOffset < file.size) {
+        let chunkSize = endOffset - startOffset;
+        if (chunkSize <= 0 || chunkSize > 15728640) {
+          chunkSize = Math.min(10485760, file.size - startOffset); // 10MB chunk
+        }
+
+        const chunkBlob = file.slice(startOffset, startOffset + chunkSize);
+        const formData = new FormData();
+        formData.append('upload_phase', 'transfer');
+        formData.append('upload_session_id', uploadSessionId);
+        formData.append('start_offset', startOffset.toString());
+        formData.append('access_token', accessToken);
+        formData.append('video_file_chunk', chunkBlob, 'chunk.bin');
+
+        const chunkRes = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          currentUploadXhr = xhr;
+
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable && onProgress) {
+              const currentTotalLoaded = startOffset + e.loaded;
+              const now = Date.now();
+              const timeDiff = (now - lastTime) / 1000;
+              let speedMBs = 0;
+              if (timeDiff > 0.4) {
+                const bytesDiff = currentTotalLoaded - lastLoaded;
+                speedMBs = ((bytesDiff / (1024 * 1024)) / timeDiff).toFixed(1);
+                lastLoaded = currentTotalLoaded;
+                lastTime = now;
+              }
+              const pct = Math.min(99, Math.round((currentTotalLoaded / file.size) * 100));
+              const loadedMB = (currentTotalLoaded / (1024 * 1024)).toFixed(1);
+              const totalMB = (file.size / (1024 * 1024)).toFixed(1);
+              onProgress({ pct, loadedMB, totalMB, speedMBs });
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            currentUploadXhr = null;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch (e) {
+                reject(new Error('Invalid response from Facebook'));
+              }
+            } else {
+              reject(new Error(`Facebook upload error: ${xhr.status} ${xhr.responseText}`));
+            }
+          });
+
+          xhr.addEventListener('error', () => {
+            currentUploadXhr = null;
+            reject(new Error('Сүлжээний холболт тасарлаа.'));
+          });
+
+          xhr.open('POST', `https://graph-video.facebook.com/v21.0/${pageId}/videos`);
+          xhr.send(formData);
+        });
+
+        if (chunkRes && chunkRes.start_offset !== undefined) {
+          startOffset = parseInt(chunkRes.start_offset, 10);
+          endOffset = parseInt(chunkRes.end_offset, 10);
+        } else {
+          startOffset += chunkSize;
+          endOffset = startOffset + 10485760;
+        }
+
+        const pct = Math.min(100, Math.round((startOffset / file.size) * 100));
+        const loadedMB = (startOffset / (1024 * 1024)).toFixed(1);
+        const totalMB = (file.size / (1024 * 1024)).toFixed(1);
+        if (onProgress) onProgress({ pct, loadedMB, totalMB, speedMBs: '0' });
+      }
+
+      return {
+        success: true,
+        page_id: pageId,
+        upload_session_id: uploadSessionId,
+        video_id: videoId
+      };
+    }
+
     async function loadPublisherPages() {
       try {
         const res = await fetch('/api/pages');
@@ -1426,7 +1526,7 @@
       // Check if URL is entered
       const url = document.getElementById('pub-media-url').value.trim();
       if (type === 'image' && url) {
-        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'p-4 text-xs text-rose-500\\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
       } else if (type === 'video' && url) {
         box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
       } else {
@@ -1509,6 +1609,62 @@
             return;
           }
 
+          const boostPreset = document.querySelector('input[name="boost_preset"]:checked').value;
+          const autoRule = document.getElementById('pub-auto-rule').checked;
+
+          // DIRECT BROWSER RESUMABLE CHUNKED UPLOAD FOR VIDEOS (500MB+ SUPPORT)
+          if (mediaType === 'video') {
+            btn.disabled = true;
+            progressContainer.classList.remove('hidden');
+            progressStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 animate-bounce"></i> Facebook рүү шууд хэсэгчлэн хуулж байна...`;
+
+            try {
+              const uploadInfo = await uploadVideoDirectToFacebookChunked(selectedMediaFile, (info) => {
+                progressBar.style.width = `${info.pct}%`;
+                progressPct.innerText = `${info.pct}%`;
+                const bytesEl = document.getElementById('upload-progress-bytes');
+                const speedEl = document.getElementById('upload-progress-speed');
+                if (bytesEl) bytesEl.innerText = `${info.loadedMB} MB / ${info.totalMB} MB`;
+                if (speedEl && parseFloat(info.speedMBs) > 0) speedEl.innerText = `🚀 ${info.speedMBs} MB/s`;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Facebook рүү хуулж байна (${info.pct}%)...`;
+              });
+
+              progressStatus.innerHTML = `<i class="fa-solid fa-bolt text-amber-500 animate-pulse"></i> Үндсэн серверт орлоо! Бусад ${selectedPageIds.length} хуудас руу 2 секундэд түгээж байна...`;
+              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Бусад хуудсуудад түгээж байна...`;
+
+              const finishRes = await fetch('/api/video-upload/finish-and-replicate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  primary_page_id: uploadInfo.page_id,
+                  upload_session_id: uploadInfo.upload_session_id,
+                  video_id: uploadInfo.video_id,
+                  target_page_ids: selectedPageIds,
+                  message: caption,
+                  boost_preset: boostPreset,
+                  auto_create_rule: autoRule
+                })
+              });
+
+              const data = await finishRes.json();
+              progressContainer.classList.add('hidden');
+              const card = document.getElementById('publish-result-card');
+              card.classList.remove('hidden');
+              renderPublishResults(data, caption);
+              loadPublishedPostsHistory();
+              btn.disabled = false;
+              btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+              return;
+            } catch (uploadErr) {
+              progressContainer.classList.add('hidden');
+              btn.disabled = false;
+              btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+              alert('Видео оруулахад алдаа гарлаа: ' + uploadErr.message);
+              return;
+            }
+          }
+
+          // Images upload via tmpfiles
           btn.disabled = true;
           progressContainer.classList.remove('hidden');
           progressStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 animate-bounce"></i> Компьютерээс хуулж байна...`;

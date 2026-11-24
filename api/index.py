@@ -623,18 +623,22 @@ class CaptionCraftRequest(BaseModel):
     movie_title: str
     genre: Optional[str] = "Драма, Кино"
     extra_details: Optional[str] = ""
+    key_details: Optional[str] = ""
 
 @app.post("/api/ai-craft-caption")
 @app.post("/ai-craft-caption")
+@app.post("/api/craft-caption")
+@app.post("/craft-caption")
 async def ai_craft_caption_endpoint(payload: CaptionCraftRequest):
     """
     Gemini 3.5 AI-аар Facebook постын татах хүчтэй, үнэ & линктэй монгол текст үүсгэх
     """
     settings = database.get_settings()
+    details = payload.key_details or payload.extra_details or ""
     res = await ai_service.craft_post_caption(
         movie_title=payload.movie_title,
         genre=payload.genre or "Драма",
-        extra_details=payload.extra_details or "",
+        extra_details=details,
         settings=settings
     )
     return res

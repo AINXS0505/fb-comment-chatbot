@@ -38,7 +38,7 @@
       </div>
       <div class="flex items-center space-x-3">
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-          <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> 3 Хуудас Холбогдсон
+          <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> <span id="header-page-count">6</span> Хуудас Холбогдсон
         </span>
         <button onclick="refreshData()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="Шинэчлэх">
           <i class="fa-solid fa-arrows-rotate"></i>
@@ -49,11 +49,14 @@
 
   <!-- Main Container with Tabs -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-
+    
     <!-- Tab Navigation -->
     <div class="flex border-b border-slate-200 mb-8 space-x-2 sm:space-x-8 overflow-x-auto">
       <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600 flex items-center gap-2">
         <i class="fa-solid fa-chart-pie"></i> Хяналтын самбар
+      </button>
+      <button onclick="switchTab('publisher')" id="tab-btn-publisher" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-bullhorn text-indigo-600"></i> Зэрэг Постлогч & Смарт Түгээлт
       </button>
       <button onclick="switchTab('mobile-control')" id="tab-btn-mobile-control" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
         <i class="fa-solid fa-mobile-screen-button text-indigo-600"></i> Гар утасны комманд
@@ -67,12 +70,376 @@
       <button onclick="switchTab('simulator')" id="tab-btn-simulator" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
         <i class="fa-solid fa-vial-circle-check"></i> AI Тест Симулятор
       </button>
-            <button onclick="switchTab('publisher')" id="tab-btn-publisher" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
-        <i class="fa-solid fa-bullhorn text-indigo-600"></i> Олон хуудсанд нийтлэх & Групп
-      </button>
       <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn pb-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
         <i class="fa-solid fa-gear"></i> Систем & AI Тохиргоо
       </button>
+    </div>
+
+    <!-- TAB: MULTI-PAGE PUBLISHER & SMART GROUP DISTRIBUTION -->
+    <div id="tab-publisher" class="tab-content hidden space-y-8">
+      
+      <!-- Top Banner -->
+      <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-white mb-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> Smart Multi-Page Auto-Poster & Group Viral Distributor
+            </span>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight">Зэрэг Постлогч & Смарт Групп Түгээлт</h2>
+            <p class="text-xs sm:text-sm text-indigo-100 max-w-2xl">
+              Нэг постер, бичлэг эсвэл текстийг бүх хуудсандаа 1 товшилтоор зэрэг нийтэлж, тус бүрд нь үнэ/ботын комманд өгөн фэйсбүүк группүүд рүү автоматаар түгээх систем.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="document.getElementById('form-multi-publish').reset(); updateMediaPreview();" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition border border-white/20">
+              <i class="fa-solid fa-rotate-left mr-1"></i> Цэвэрлэх
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left 2 Cols: Composer Form -->
+        <div class="lg:col-span-2 space-y-6">
+          <form id="form-multi-publish" onsubmit="publishMultiPages(event)" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+            
+            <!-- Step 1: Target Page Selector -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">1</span>
+                  Нийтлэх хуудсуудаа сонгох
+                </label>
+                <button type="button" onclick="toggleSelectAllPages()" id="btn-toggle-all-pages" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition">
+                  Бүгдийг сонгох
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="publisher-pages-selector">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Step 2: Media Type Selector -->
+            <div>
+              <label class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
+                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">2</span>
+                Постын төрөл сонгох
+              </label>
+              <div class="grid grid-cols-3 gap-3">
+                <button type="button" onclick="setMediaType('image')" id="btn-media-image" class="media-type-btn p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-indigo-700 font-bold text-xs flex flex-col items-center justify-center gap-2 transition">
+                  <i class="fa-solid fa-image text-xl"></i>
+                  <span>Зураг / Постер</span>
+                </button>
+                <button type="button" onclick="setMediaType('video')" id="btn-media-video" class="media-type-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs flex flex-col items-center justify-center gap-2 transition">
+                  <i class="fa-solid fa-film text-xl"></i>
+                  <span>Видео бичлэг</span>
+                </button>
+                <button type="button" onclick="setMediaType('text')" id="btn-media-text" class="media-type-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs flex flex-col items-center justify-center gap-2 transition">
+                  <i class="fa-solid fa-align-left text-xl"></i>
+                  <span>Зөвхөн Текст & Линк</span>
+                </button>
+              </div>
+              <input type="hidden" id="pub-media-type" value="image">
+            </div>
+
+            <!-- Step 2.5: Media Source Mode (Disk File vs URL) -->
+            <div id="media-source-section" class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Медиа файл оруулах хэлбэр
+                </label>
+                <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                  <button type="button" onclick="setMediaSourceMode('file')" id="btn-src-file" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-hard-drive"></i> Компьютерээс оруулах
+                  </button>
+                  <button type="button" onclick="setMediaSourceMode('url')" id="btn-src-url" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-link"></i> Линкээр оруулах
+                  </button>
+                </div>
+              </div>
+
+              <!-- Option A: Direct Local File Upload (Drag & Drop + File Explorer) -->
+              <div id="media-file-container">
+                <div id="drop-zone" onclick="document.getElementById('pub-file-input').click()" 
+                     class="cursor-pointer border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/20 hover:bg-indigo-50/50 rounded-2xl p-6 text-center transition group">
+                  <input type="file" id="pub-file-input" onchange="handleFileSelect(event)" accept="video/*,image/*" class="hidden">
+                  
+                  <div id="drop-zone-idle" class="space-y-2">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-xl group-hover:scale-110 transition duration-200">
+                      <i class="fa-solid fa-cloud-arrow-up" id="upload-icon"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-800" id="upload-main-text">Компьютерээс видео эсвэл зураг сонгох</h4>
+                      <p class="text-xs text-slate-500 mt-0.5" id="upload-sub-text">Энд товших эсвэл файлаа чирж тавина уу (MP4, MOV, WebM, JPG, PNG - 100MB хүртэл)</p>
+                    </div>
+                  </div>
+
+                  <div id="drop-zone-selected" class="hidden flex items-center justify-between p-3.5 bg-white rounded-xl border border-indigo-200 shadow-sm text-left">
+                    <div class="flex items-center space-x-3 truncate">
+                      <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg font-bold shrink-0">
+                        <i class="fa-solid fa-file-video" id="selected-file-icon"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="block text-xs font-bold text-slate-800 truncate" id="selected-file-name">file.mp4</span>
+                        <span class="block text-[11px] text-slate-400 font-mono" id="selected-file-size">0 MB</span>
+                      </div>
+                    </div>
+                    <button type="button" onclick="clearSelectedFile(event)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition shrink-0">
+                      <i class="fa-solid fa-xmark mr-1"></i> Солих
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Upload Progress Bar (Visible while uploading file) -->
+                <div id="upload-progress-container" class="hidden mt-3 p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-2">
+                  <div class="flex items-center justify-between text-xs font-semibold">
+                    <span class="text-indigo-950 flex items-center gap-1.5" id="upload-progress-status">
+                      <i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> Файлыг серверт хуулж байна...
+                    </span>
+                    <span class="font-mono text-indigo-700 font-bold" id="upload-progress-pct">0%</span>
+                  </div>
+                  <div class="w-full bg-indigo-200/60 rounded-full h-2.5 overflow-hidden">
+                    <div id="upload-progress-bar" class="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Option B: URL Input Container (Hidden by default) -->
+              <div id="media-url-container" class="hidden">
+                <label class="block text-xs font-semibold text-slate-700 mb-1" id="media-url-label">
+                  Зураг эсвэл Видеоны шууд URL хаяг
+                </label>
+                <div class="flex gap-2">
+                  <input type="url" id="pub-media-url" placeholder="https://example.com/video.mp4" oninput="updateMediaPreview()" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono">
+                  <button type="button" onclick="pasteMediaUrl()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition">
+                    <i class="fa-regular fa-clipboard mr-1"></i> Paste
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Олон нийтэд нээлттэй шууд видео/зургийн холбоос (ж: Google Drive, Cloud, CDN).</p>
+              </div>
+            </div>
+
+            <!-- Step 3: AI Caption Generator & Textarea -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">3</span>
+                  Постын тайлбар & текст
+                </label>
+                <span class="text-xs text-slate-400 font-mono" id="char-counter">0 тэмдэгт</span>
+              </div>
+
+              <!-- AI Writer Box -->
+              <div class="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl mb-3 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Gemini 3.5 AI-аар вирал тайлбар бичүүлэх
+                  </span>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <input type="text" id="ai-movie-title" placeholder="Киноны нэр (ж: Зоригт цэрэг, Цасан хатан, Босс...)" class="flex-1 px-3 py-1.5 text-xs border border-indigo-200 rounded-lg bg-white">
+                  <button type="button" onclick="generateAICaption()" id="btn-generate-caption" class="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-semibold whitespace-nowrap shadow-sm transition">
+                    <i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх
+                  </button>
+                </div>
+              </div>
+
+              <textarea id="pub-caption" rows="5" oninput="updateCharCount()" placeholder="Постын тайлбар бичих..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 leading-relaxed"></textarea>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Step 4: Smart Boost & Per-Page Command Presets -->
+            <div>
+              <label class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">4</span>
+                Смарт Boost & Комманд сонголт
+              </label>
+              <p class="text-xs text-slate-500 mb-3">Нийтлэгдсэн пост бүрд тохирсон үнийн санал болон авто-хариултын дүрмийг холбоно</p>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <label class="cursor-pointer p-3.5 rounded-xl border-2 border-indigo-500 bg-indigo-50/40 flex items-start space-x-3 transition">
+                  <input type="radio" name="boost_preset" value="standard" checked class="mt-1 text-indigo-600 focus:ring-indigo-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">🍿 Стандарт Хүрээ багц</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">1 кино — 3,900₮ | Бүх кино — 15,900₮ | QPay линк шууд хавсаргана</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 flex items-start space-x-3 transition">
+                  <input type="radio" name="boost_preset" value="vip" class="mt-1 text-indigo-600 focus:ring-indigo-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">🔥 VIP Онцлох урамшуулал</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">1000+ кино бүрэн багтсан VIP эрхийн тусгай уриалга</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 flex items-start space-x-3 transition">
+                  <input type="radio" name="boost_preset" value="chat_cta" class="mt-1 text-indigo-600 focus:ring-indigo-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">💬 Чат руу татах CTA (Call-to-Action)</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">'Үзэх' гэж коммент бичүүлж, Messenger-ээр линкийг автоматаар явуулна</span>
+                  </div>
+                </label>
+
+                <label class="cursor-pointer p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 flex items-start space-x-3 transition">
+                  <input type="radio" name="boost_preset" value="qpay_fast" class="mt-1 text-indigo-600 focus:ring-indigo-500">
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800">⚡ Шуурхай QPay төлбөр</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">Шууд QPay холбоос болон зааврыг пост & чатаар түгээнэ</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Auto Rule Binding Checkbox -->
+              <div class="flex items-center space-x-2.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <input type="checkbox" id="pub-auto-rule" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300">
+                <label for="pub-auto-rule" class="text-xs text-slate-700 font-medium cursor-pointer">
+                  Нийтлэгдсэн шинэ постод ирэх бүх комментод энэ коммандаар автоматаар хариулах дүрэм шууд үүсгэх
+                </label>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-submit-publish" class="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-100 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Сонгосон бүх хуудсанд зэрэг нийтлэх</span>
+            </button>
+          </form>
+
+          <!-- Publish Results Card (Dynamic) -->
+          <div id="publish-result-card" class="hidden bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-emerald-100">
+              <div class="flex items-center space-x-2 text-emerald-700 font-bold text-sm">
+                <i class="fa-solid fa-circle-check text-lg"></i>
+                <span id="publish-result-summary">Амжилттай нийтлэгдлээ!</span>
+              </div>
+              <span id="publish-result-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"></span>
+            </div>
+
+            <!-- Page Post Links -->
+            <div class="space-y-2" id="publish-result-links">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- 1-Click Group Sharing Banner -->
+            <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-share-nodes text-blue-600"></i> Зорилтот Группүүд рүү Смарт Түгээлт хийх
+                  </h4>
+                  <p class="text-[11px] text-blue-700">Доорх группүүд дээр 1 товшилтоор постын текстээ хуулж шууд хуваалцаарай:</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="post-group-shares-container">
+                <!-- Group Share Buttons -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Col: Live Preview & Groups Hub -->
+        <div class="space-y-6">
+          
+          <!-- Live Facebook Post Mock Preview -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i class="fa-brands fa-facebook text-blue-600"></i> Live Facebook Preview
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">Real-time</span>
+            </div>
+            
+            <div class="p-4 space-y-3">
+              <!-- Author header -->
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                  <i class="fa-brands fa-facebook-f"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-xs text-slate-900 leading-tight" id="preview-page-name">Хүрээ Кино & Холбогдсон Хуудсууд</h4>
+                  <span class="text-[10px] text-slate-400">Дөнгөж сая · 🌐 Нийтэд нээлттэй</span>
+                </div>
+              </div>
+
+              <!-- Caption -->
+              <div class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto" id="preview-caption">
+                Постын тайлбар энд харагдана...
+              </div>
+
+              <!-- Media Preview Box -->
+              <div id="preview-media-box" class="rounded-xl overflow-hidden bg-slate-100 border border-slate-200 aspect-video flex items-center justify-center text-slate-400 text-xs">
+                <div class="text-center p-4">
+                  <i class="fa-regular fa-image text-3xl mb-1 text-slate-300"></i>
+                  <p>Зураг эсвэл видеоны хаяг оруулахад энд харагдана</p>
+                </div>
+              </div>
+
+              <!-- Action Bar -->
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-around text-xs text-slate-500 font-semibold">
+                <span class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"><i class="fa-regular fa-thumbs-up"></i> Like</span>
+                <span class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"><i class="fa-regular fa-comment"></i> Comment</span>
+                <span class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"><i class="fa-solid fa-share"></i> Share</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Facebook Groups Manager -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-users-rectangle text-indigo-600"></i> Зорилтот Фэйсбүүк Группүүд
+                </h3>
+                <p class="text-[11px] text-slate-500">Кино сонирхогчдын бэлэн группүүд</p>
+              </div>
+              <button onclick="toggleGroupForm()" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> Нэмэх
+              </button>
+            </div>
+
+            <!-- New Group Form (toggle) -->
+            <form id="form-add-group" onsubmit="addFacebookGroup(event)" class="hidden p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <input type="text" id="new-group-name" placeholder="Группын нэр" required class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg">
+              <input type="text" id="new-group-url" placeholder="Групп линк (facebook.com/groups/...)" required class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg">
+              <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="toggleGroupForm()" class="px-2.5 py-1 text-xs text-slate-600">Болих</button>
+                <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Хадгалах</button>
+              </div>
+            </form>
+
+            <!-- Groups List -->
+            <div class="space-y-2 max-h-64 overflow-y-auto" id="target-groups-list">
+              <!-- Loaded via JS -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom: Feed of Recently Published Posts -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Сүүлд Нийтлэгдсэн Постуудын Түүх
+            </h3>
+            <p class="text-xs text-slate-500">Бүх хуудсуудад нийтлэгдсэн постууд болон шууд холбоосууд</p>
+          </div>
+          <button onclick="loadPublishedPosts()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+            <i class="fa-solid fa-rotate mr-1"></i> Шинэчлэх
+          </button>
+        </div>
+
+        <div class="divide-y divide-slate-100" id="published-posts-history">
+          <!-- Loaded via JS -->
+        </div>
+      </div>
+
     </div>
 
     <!-- TAB: MOBILE REMOTE COMMANDS -->
@@ -129,10 +496,9 @@
         </div>
       </div>
     </div>
-
     <!-- TAB 1: ANALYTICS & LOGS -->
     <div id="tab-analytics" class="tab-content space-y-8">
-
+      
       <!-- Connected Facebook Pages Banner -->
       <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-md">
         <div class="flex items-center justify-between mb-4">
@@ -141,7 +507,7 @@
               <i class="fa-brands fa-facebook"></i>
             </div>
             <div>
-              <h2 class="text-base font-bold">Холбогдсон Facebook Хуудсууд (3)</h2>
+              <h2 class="text-base font-bold">Холбогдсон Facebook Хуудсууд (<span id="banner-page-count">6</span>)</h2>
               <p class="text-xs text-blue-200">Webhook & Auto-reply идэвхжсэн</p>
             </div>
           </div>
@@ -391,203 +757,6 @@
       </div>
     </div>
 
-
-    <!-- TAB: MULTI-PAGE PUBLISHER & VIRAL GROUP DISTRIBUTION -->
-    <div id="tab-publisher" class="tab-content hidden max-w-5xl mx-auto space-y-8">
-
-      <!-- Multi-Page Publisher Card -->
-      <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-              <i class="fa-solid fa-bullhorn text-lg"></i>
-            </div>
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">Олон Facebook хуудсанд зэрэг нийтлэх</h2>
-              <p class="text-xs text-slate-500">Сонгосон бүх хуудсанд нэг товшилтоор зураг, видео, пост нийтэлж коммент дүрмийг автоматаар тохируулна</p>
-            </div>
-          </div>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <i class="fa-solid fa-bolt mr-1"></i> Smart Multi-Post
-          </span>
-        </div>
-
-        <!-- Target Pages Selection -->
-        <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-semibold text-slate-700">Нийтлэх хуудсууд:</label>
-            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-indigo-600">
-              <input type="checkbox" id="pub-page-all" checked onchange="toggleAllPublisherPages(this)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
-              Бүх хуудсанд нийтлэх
-            </label>
-          </div>
-          <div id="pub-pages-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-            <p class="text-slate-400">Хуудсуудыг ачаалж байна...</p>
-          </div>
-        </div>
-
-        <!-- Message & AI Copywriter -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-semibold text-slate-700">Постын текст / тайлбар:</label>
-            <button type="button" onclick="toggleAICaptionBox()" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow-sm hover:from-purple-700 hover:to-indigo-700 transition">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Gemini AI-аар бичүүлэх
-            </button>
-          </div>
-
-          <!-- AI Caption Generator Accordion -->
-          <div id="ai-caption-box" class="hidden bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-200 space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-robot text-purple-600"></i> Gemini 3.5 Flash Маркетинг Текст Үүсгэгч
-              </span>
-              <button type="button" onclick="toggleAICaptionBox()" class="text-slate-400 hover:text-slate-600 text-xs">
-                <i class="fa-solid fa-xmark"></i> Хаах
-              </button>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input type="text" id="craft-title" placeholder="Киноны нэр (Жишээ: Аварга махчин)" class="px-3 py-1.5 text-xs rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-400 bg-white">
-              <input type="text" id="craft-genre" placeholder="Төрөл (Жишээ: Аймшиг, Драма)" class="px-3 py-1.5 text-xs rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-400 bg-white">
-              <input type="text" id="craft-details" placeholder="Онцлог/голлох үйл явдал" class="px-3 py-1.5 text-xs rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-400 bg-white">
-            </div>
-            <button type="button" id="craft-btn" onclick="generateAICaptions()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2">
-              <i class="fa-solid fa-sparkles"></i> 3 Татах Хүчтэй Хувилбар Зохиох
-            </button>
-            <div id="craft-results" class="hidden space-y-2 pt-2"></div>
-          </div>
-
-          <textarea id="pub-message" rows="5" class="w-full p-3 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 font-sans" placeholder="Постын тайлбар, сонирхол татах үйл явдлыг энд бичнэ үү..."></textarea>
-        </div>
-
-        <!-- Media Type & URL -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Медиа төрөл:</label>
-            <select id="pub-media-type" class="w-full p-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white">
-              <option value="text">📄 Зөвхөн текст (Энгийн пост)</option>
-              <option value="image">🖼️ Зураг / Постер (URL-аар)</option>
-              <option value="video">🎥 Видео (Шууд URL-аар)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Медиа шууд холбоос (Image/Video URL):</label>
-            <input type="url" id="pub-media-url" placeholder="https://.../poster.jpg эсвэл video.mp4" class="w-full p-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white">
-          </div>
-        </div>
-
-        <!-- Boost Preset & Automation Rule -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Сурталчилгааны Boost загвар:</label>
-            <select id="pub-boost-preset" class="w-full p-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white">
-              <option value="standard">🎬 Стандарт (Үзэх линк 3,900₮ / 15,900₮ QPay)</option>
-              <option value="vip">🔥 VIP урамшуулал (1000+ кино бүрэн нээх)</option>
-              <option value="chat_cta">💬 Коммент CTA ('Үзэх' гэж бичүүлж бот чатаар линк илгээх)</option>
-              <option value="qpay_fast">⚡ QPay Шуурхай төлөлт</option>
-              <option value="custom">✏️ Загваргүй (Текстийг шууд нийтлэх)</option>
-            </select>
-          </div>
-          <div class="flex items-center pt-5">
-            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
-              <input type="checkbox" id="pub-auto-rule" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
-              Коммент ирэхэд чатботоор автоматаар хариулж линк илгээх дүрмийг холбох
-            </label>
-          </div>
-        </div>
-
-        <!-- Action Button & Status -->
-        <div>
-          <button type="button" id="btn-publish-multi" onclick="submitMultiPublish()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 transition transform active:scale-95">
-            <i class="fa-solid fa-paper-plane"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх
-          </button>
-        </div>
-
-        <!-- Results Alert Box -->
-        <div id="pub-result-box" class="hidden p-4 rounded-xl border text-xs space-y-2"></div>
-      </div>
-
-      <!-- Viral Group Distribution Section -->
-      <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-100">
-              <i class="fa-solid fa-share-nodes text-lg"></i>
-            </div>
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">Facebook Группүүдийн Тараалт (Viral Distribution)</h2>
-              <p class="text-xs text-slate-500">Зорилтот кино сонирхогчдын группүүдэд постыг нэг товшилтоор хуваалцах шуурхай холбоосууд</p>
-            </div>
-          </div>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <i class="fa-solid fa-users mr-1"></i> Target Groups
-          </span>
-        </div>
-
-        <!-- Add Group Form -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-          <h3 class="text-xs font-bold text-slate-800">Шинэ зорилтот групп нэмэх:</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-            <input type="text" id="grp-name" placeholder="Группын нэр" class="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white sm:col-span-1">
-            <input type="url" id="grp-url" placeholder="https://www.facebook.com/groups/..." class="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white sm:col-span-2">
-            <input type="text" id="grp-category" placeholder="Ангилал (Жишээ: Кино)" class="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white">
-          </div>
-          <button type="button" onclick="submitAddGroup()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5">
-            <i class="fa-solid fa-plus"></i> Групп хадгалах
-          </button>
-        </div>
-
-        <!-- Groups Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 text-slate-400 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="p-3">Группын нэр</th>
-                <th class="p-3">Ангилал</th>
-                <th class="p-3">Групп линк</th>
-                <th class="p-3 text-right">Хуваалцах & Үйлдэл</th>
-              </tr>
-            </thead>
-            <tbody id="groups-table-body" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Published Posts History -->
-      <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white shadow-md">
-              <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-            </div>
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">Сүүлд нийтлэгдсэн постуудын түүх</h2>
-              <p class="text-xs text-slate-500">Системээс Facebook хуудсуудад амжилттай нийтлэгдсэн постууд</p>
-            </div>
-          </div>
-          <button type="button" onclick="loadPublishedPosts()" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg bg-slate-50">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Шинэчлэх
-          </button>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 text-slate-400 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="p-3">Огноо</th>
-                <th class="p-3">Хуудас</th>
-                <th class="p-3">Төрөл</th>
-                <th class="p-3">Постын текст</th>
-                <th class="p-3">Preset</th>
-                <th class="p-3 text-right">Үйлдэл</th>
-              </tr>
-            </thead>
-            <tbody id="published-posts-tbody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
   </main>
 
   <!-- Modal for Creating/Editing Post Rule -->
@@ -628,7 +797,6 @@
     <i class="fa-solid fa-check text-emerald-400"></i>
     <span id="toast-message">Амжилттай хадгалагдлаа</span>
   </div>
-
   <script>
     // Tab switching
     function switchTab(tabId) {
@@ -655,13 +823,26 @@
 
     // Load initial data
     async function refreshData() {
-      await Promise.all([loadConnectedPages(), loadStats(), loadComments(), loadRules(), loadLeads(), loadSettings(), loadPublisherPages(), loadGroups(), loadPublishedPosts()]);
+      await Promise.all([
+        loadConnectedPages(),
+        loadStats(),
+        loadComments(),
+        loadRules(),
+        loadLeads(),
+        loadSettings(),
+        loadPublisherPages(),
+        loadGroups(),
+        loadPublishedPosts()
+      ]);
     }
 
     async function loadConnectedPages() {
       try {
         const res = await fetch('/api/pages');
         const pages = await res.json();
+        if (document.getElementById('header-page-count')) document.getElementById('header-page-count').innerText = pages.length;
+        if (document.getElementById('banner-page-count')) document.getElementById('banner-page-count').innerText = pages.length;
+
         const container = document.getElementById('connected-pages-container');
         container.innerHTML = pages.map(p => `
           <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10 flex items-center space-x-3">
@@ -969,361 +1150,555 @@
         alert('Алдаа: ' + e.message);
       }
     }
+    // --- MULTI-PAGE PUBLISHER & VIRAL GROUP SHARING JAVASCRIPT ---
+    let publisherPages = [];
+    let targetGroups = [];
+    let selectedMediaFile = null;
+    let mediaSourceMode = 'file'; // 'file' or 'url'
 
+    function setMediaSourceMode(mode) {
+      mediaSourceMode = mode;
+      const btnFile = document.getElementById('btn-src-file');
+      const btnUrl = document.getElementById('btn-src-url');
+      const fileContainer = document.getElementById('media-file-container');
+      const urlContainer = document.getElementById('media-url-container');
+
+      if (mode === 'file') {
+        btnFile.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm transition flex items-center gap-1.5';
+        btnUrl.className = 'px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition flex items-center gap-1.5';
+        fileContainer.classList.remove('hidden');
+        urlContainer.classList.add('hidden');
+      } else {
+        btnUrl.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm transition flex items-center gap-1.5';
+        btnFile.className = 'px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition flex items-center gap-1.5';
+        urlContainer.classList.remove('hidden');
+        fileContainer.classList.add('hidden');
+      }
+      updateMediaPreview();
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      processSelectedFile(file);
+    }
+
+    function processSelectedFile(file) {
+      selectedMediaFile = file;
+      const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|mov|webm|mkv|avi)$/i);
+      
+      // Auto-switch post type tab if file is video
+      if (isVideo) {
+        setMediaType('video');
+      } else {
+        setMediaType('image');
+      }
+
+      document.getElementById('drop-zone-idle').classList.add('hidden');
+      document.getElementById('drop-zone-selected').classList.remove('hidden');
+      document.getElementById('selected-file-name').innerText = file.name;
+      document.getElementById('selected-file-size').innerText = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+      document.getElementById('selected-file-icon').className = isVideo ? 'fa-solid fa-file-video' : 'fa-solid fa-file-image';
+
+      updateMediaPreview();
+      showToast(`📁 Файл сонгогдлоо: ${file.name}`);
+    }
+
+    function clearSelectedFile(e) {
+      if (e) e.stopPropagation();
+      selectedMediaFile = null;
+      document.getElementById('pub-file-input').value = '';
+      document.getElementById('drop-zone-selected').classList.add('hidden');
+      document.getElementById('drop-zone-idle').classList.remove('hidden');
+      updateMediaPreview();
+    }
+
+    // Upload file to tmpfiles with live progress
+    function uploadFileToTmpFiles(file, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', file);
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && onProgress) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            onProgress(pct);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const res = JSON.parse(xhr.responseText);
+              if (res.status === 'success' && res.data && res.data.url) {
+                // Convert to raw streaming download URL for Facebook Graph API
+                const directUrl = res.data.url.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/');
+                resolve(directUrl);
+              } else {
+                reject(new Error(res.message || 'File upload failed'));
+              }
+            } catch (err) {
+              reject(new Error('Invalid server response'));
+            }
+          } else {
+            reject(new Error(`Server error: ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Сүлжээний алдаа гарлаа. Холболтоо шалгана уу.')));
+        xhr.addEventListener('abort', () => reject(new Error('Байршуулалт цуцлагдлаа')));
+
+        xhr.open('POST', 'https://tmpfiles.org/api/v1/upload');
+        xhr.send(formData);
+      });
+    }
 
     async function loadPublisherPages() {
       try {
         const res = await fetch('/api/pages');
-        const pages = await res.json();
-        const container = document.getElementById('pub-pages-list') || document.getElementById('publisher-pages-list');
+        publisherPages = await res.json();
+        const container = document.getElementById('publisher-pages-selector');
         if (!container) return;
-        if (!pages || pages.length === 0) {
-          container.innerHTML = '<p class="text-sm text-slate-400">Холбогдсон хуудас олдсонгүй</p>';
-          return;
-        }
-        container.innerHTML = pages.map(p => `
-          <label class="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
-            <input type="checkbox" name="pub_pages" value="${p.page_id}" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-            <div class="flex-1 truncate">
-              <span class="text-sm font-semibold text-slate-800">${p.page_name}</span>
-              <p class="text-xs text-slate-400 font-mono">ID: ${p.page_id}</p>
+        container.innerHTML = publisherPages.map((p) => `
+          <label class="cursor-pointer p-3 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50/50 flex items-center space-x-3 transition">
+            <input type="checkbox" name="pub_pages" value="${p.page_id}" checked class="page-checkbox w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+            <div class="truncate">
+              <span class="block text-xs font-bold text-slate-800 truncate" title="${p.page_name}">${p.page_name}</span>
+              <span class="block text-[10px] text-slate-400 font-mono truncate">ID: ${p.page_id}</span>
             </div>
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
           </label>
         `).join('');
       } catch (e) {
-        console.error(e);
+        console.error("Error loading publisher pages:", e);
       }
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    function toggleSelectAllPages() {
+      const checkboxes = document.querySelectorAll('.page-checkbox');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      checkboxes.forEach(cb => cb.checked = !allChecked);
+      document.getElementById('btn-toggle-all-pages').innerText = allChecked ? 'Бүгдийг сонгох' : 'Сонголтыг цуцлах';
     }
 
-    async function loadPublisherGroups() {
-      try {
-        const res = await fetch('/api/groups');
-        const groups = await res.json();
-        const tbody = document.getElementById('groups-table-body');
-        if (!tbody) return;
-        if (!groups || groups.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-xs text-slate-400">Одоогоор зорилтот групп бүртгэгдээгүй байна</td></tr>';
-          return;
+    function setMediaType(type) {
+      document.getElementById('pub-media-type').value = type;
+      ['image', 'video', 'text'].forEach(t => {
+        const btn = document.getElementById('btn-media-' + t);
+        if (btn) {
+          if (t === type) {
+            btn.className = 'media-type-btn p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-indigo-700 font-bold text-xs flex flex-col items-center justify-center gap-2 transition';
+          } else {
+            btn.className = 'media-type-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-xs flex flex-col items-center justify-center gap-2 transition';
+          }
         }
-        tbody.innerHTML = groups.map(g => `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="p-3 text-xs font-semibold text-slate-800">${escapeHtml(g.group_name || 'Нэргүй')}</td>
-            <td class="p-3 text-xs text-slate-500"><span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600 font-medium">${escapeHtml(g.category || 'Кино')}</span></td>
-            <td class="p-3 text-xs text-blue-600 truncate max-w-xs"><a href="${escapeHtml(g.group_url)}" target="_blank" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ${escapeHtml(g.group_url)}</a></td>
-            <td class="p-3 text-right space-x-1">
-              <a href="${escapeHtml(g.group_url)}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium rounded-lg transition"><i class="fa-solid fa-share"></i> Нээх</a>
-              <button type="button" onclick="deleteGroup(${g.id})" class="inline-flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:bg-red-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
-            </td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error loading groups:', e);
-      }
-    }
-    const loadGroups = loadPublisherGroups;
+      });
 
-    async function loadPublishedPosts() {
-      try {
-        const res = await fetch('/api/published-posts');
-        const posts = await res.json();
-        const tbody = document.getElementById('published-posts-tbody');
-        if (!tbody) return;
-        if (!posts || posts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-xs text-slate-400">Нийтлэгдсэн пост одоогоор алга байна</td></tr>';
-          return;
+      const mediaSourceSection = document.getElementById('media-source-section');
+      const fileInput = document.getElementById('pub-file-input');
+      const uploadMain = document.getElementById('upload-main-text');
+      const uploadSub = document.getElementById('upload-sub-text');
+      const uploadIcon = document.getElementById('upload-icon');
+
+      if (type === 'text') {
+        if (mediaSourceSection) mediaSourceSection.classList.add('hidden');
+      } else {
+        if (mediaSourceSection) mediaSourceSection.classList.remove('hidden');
+        if (type === 'video') {
+          if (fileInput) fileInput.accept = 'video/mp4,video/quicktime,video/webm,video/*';
+          if (uploadMain) uploadMain.innerText = 'Компьютерээс видео файл сонгох';
+          if (uploadSub) uploadSub.innerText = 'Энд товших эсвэл видео файлаа чирж тавина уу (MP4, MOV, WebM - 100MB хүртэл)';
+          if (uploadIcon) uploadIcon.className = 'fa-solid fa-film';
+        } else {
+          if (fileInput) fileInput.accept = 'image/jpeg,image/png,image/webp,image/*';
+          if (uploadMain) uploadMain.innerText = 'Компьютерээс зураг сонгох';
+          if (uploadSub) uploadSub.innerText = 'Энд товших эсвэл зургаа чирж тавина уу (JPG, PNG, WebP)';
+          if (uploadIcon) uploadIcon.className = 'fa-solid fa-cloud-arrow-up';
         }
-        tbody.innerHTML = posts.map(item => `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="p-3 text-xs text-slate-500 whitespace-nowrap">${item.created_at ? new Date(item.created_at).toLocaleString('mn-MN') : '-'}</td>
-            <td class="p-3 text-xs font-semibold text-slate-800">${escapeHtml(item.page_name || item.page_id)}</td>
-            <td class="p-3 text-xs text-slate-600"><span class="px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(item.media_type || 'status')}</span></td>
-            <td class="p-3 text-xs text-slate-700 max-w-sm truncate" title="${escapeHtml(item.message || '')}">${escapeHtml(item.message || '-')}</td>
-            <td class="p-3 text-xs text-slate-500"><span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">${escapeHtml(item.preset_type || 'none')}</span></td>
-            <td class="p-3 text-right">
-              ${item.post_id ? `<a href="https://facebook.com/${item.post_id}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 font-medium rounded-lg"><i class="fa-solid fa-arrow-up-right-from-square"></i> Үзэх</a>` : '-'}
-            </td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error loading published posts:', e);
       }
+      updateMediaPreview();
     }
 
-    async function handleGenerateAiCaption() {
-      const promptInput = document.getElementById('ai-caption-prompt');
-      const prompt = promptInput ? promptInput.value : '';
-      const btn = document.getElementById('btn-generate-caption');
-      if (!prompt.trim()) {
-        alert('Постын сэдэв эсвэл драманы нэрийг оруулна уу!');
+    function updateCharCount() {
+      const val = document.getElementById('pub-caption').value;
+      document.getElementById('char-counter').innerText = `${val.length} тэмдэгт`;
+      document.getElementById('preview-caption').innerText = val || 'Постын тайлбар энд харагдана...';
+    }
+
+    function updateMediaPreview() {
+      const type = document.getElementById('pub-media-type').value;
+      const box = document.getElementById('preview-media-box');
+
+      if (type === 'text') {
+        box.innerHTML = `
+          <div class="text-center p-4">
+            <i class="fa-solid fa-align-left text-3xl mb-1 text-slate-300"></i>
+            <p>Зөвхөн текст нийтлэл</p>
+          </div>
+        `;
         return;
       }
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI бичиж байна...';
+
+      // Check if local file is selected
+      if (selectedMediaFile) {
+        const blobUrl = URL.createObjectURL(selectedMediaFile);
+        if (selectedMediaFile.type.startsWith('video/') || type === 'video') {
+          box.innerHTML = `<video src="${blobUrl}" controls autoplay muted class="w-full h-full object-cover"></video>`;
+        } else {
+          box.innerHTML = `<img src="${blobUrl}" class="w-full h-full object-cover">`;
+        }
+        return;
       }
+
+      // Check if URL is entered
+      const url = document.getElementById('pub-media-url').value.trim();
+      if (type === 'image' && url) {
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+      } else if (type === 'video' && url) {
+        box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
+      } else {
+        box.innerHTML = `
+          <div class="text-center p-4">
+            <i class="fa-regular fa-image text-3xl mb-1 text-slate-300"></i>
+            <p>Файл сонгох эсвэл хаяг оруулахад шууд тоглуулж харуулна</p>
+          </div>
+        `;
+      }
+    }
+
+    async function pasteMediaUrl() {
       try {
-        const res = await fetch('/api/craft-caption', {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('pub-media-url').value = text;
+        updateMediaPreview();
+      } catch (e) {
+        showToast('Линкээ гараар оруулна уу');
+      }
+    }
+
+    async function generateAICaption() {
+      const movieTitle = document.getElementById('ai-movie-title').value.trim();
+      if (!movieTitle) {
+        alert('Киноны нэрийг оруулна уу');
+        return;
+      }
+      const btn = document.getElementById('btn-generate-caption');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI бичиж байна...`;
+
+      try {
+        const res = await fetch('/api/ai-craft-caption', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ prompt: prompt, tone: 'viral' })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ movie_title: movieTitle })
         });
         const data = await res.json();
-        if (data.caption) {
-          const msgEl = document.getElementById('pub-message');
-          if (msgEl) msgEl.value = data.caption;
-        } else {
-          alert('AI тайлбар үүсгэхэд алдаа гарлаа: ' + (data.error || 'Тодорхойгүй'));
-        }
+        document.getElementById('pub-caption').value = data.caption || data.short_caption;
+        updateCharCount();
+        showToast('Gemini AI вирал тайлбарыг амжилттай үүсгэлээ!');
       } catch (e) {
-        alert('Хүсэлт илгээхэд алдаа: ' + e.message);
+        alert('AI үүсгэхэд алдаа гарлаа: ' + e.message);
       } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI Тайлбар Үүсгэх';
-        }
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх`;
       }
     }
-
-    async function handleMultiPublish(e) {
-      if (e && e.preventDefault) e.preventDefault();
-      const message = (document.getElementById('pub-message') || {}).value || '';
-      const link = (document.getElementById('pub-link') || {}).value || '';
-      const checkedBoxes = document.querySelectorAll('input[name="pub_pages"]:checked');
-      const pageIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-      if (pageIds.length === 0) {
-        alert('Ядаж 1 Facebook хуудас сонгоно уу!');
-        return;
-      }
-      if (!message.trim() && !link.trim()) {
-        alert('Постын текст эсвэл линк оруулна уу!');
+    async function publishMultiPages(e) {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll('.page-checkbox:checked');
+      const selectedPageIds = Array.from(checkboxes).map(cb => cb.value);
+      if (selectedPageIds.length === 0) {
+        alert('Ядаж нэг хуудас сонгоно уу!');
         return;
       }
 
-      const btn = document.getElementById('btn-multi-publish');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Нийтэлж байна...';
+      const caption = document.getElementById('pub-caption').value.trim();
+      if (!caption) {
+        alert('Постын тайлбар текстийг оруулна уу!');
+        return;
       }
+
+      const mediaType = document.getElementById('pub-media-type').value;
+      let finalMediaUrl = null;
+
+      const progressContainer = document.getElementById('upload-progress-container');
+      const progressBar = document.getElementById('upload-progress-bar');
+      const progressPct = document.getElementById('upload-progress-pct');
+      const progressStatus = document.getElementById('upload-progress-status');
+      const btn = document.getElementById('btn-submit-publish');
+
+      // Handle File Upload if in 'file' mode
+      if (mediaType !== 'text') {
+        if (mediaSourceMode === 'file') {
+          if (!selectedMediaFile) {
+            alert('Та компьютерээсээ видео эсвэл зураг сонгоно уу!');
+            return;
+          }
+
+          btn.disabled = true;
+          progressContainer.classList.remove('hidden');
+          progressStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 animate-bounce"></i> Компьютерээс хуулж байна...`;
+          
+          try {
+            finalMediaUrl = await uploadFileToTmpFiles(selectedMediaFile, (pct) => {
+              progressBar.style.width = `${pct}%`;
+              progressPct.innerText = `${pct}%`;
+              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Компьютерээс хуулж байна (${pct}%)...`;
+            });
+            progressStatus.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i> Файл амжилттай бэлэн боллоо!`;
+          } catch (uploadErr) {
+            progressContainer.classList.add('hidden');
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+            alert('Файл хуулахад алдаа гарлаа: ' + uploadErr.message);
+            return;
+          }
+        } else {
+          finalMediaUrl = document.getElementById('pub-media-url').value.trim();
+          if (!finalMediaUrl) {
+            alert('Медиа URL хаягаа оруулна уу!');
+            return;
+          }
+        }
+      }
+
+      const boostPreset = document.querySelector('input[name="boost_preset"]:checked').value;
+      const autoRule = document.getElementById('pub-auto-rule').checked;
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${selectedPageIds.length} хуудсанд зэрэг нийтэлж байна...`;
 
       try {
         const res = await fetch('/api/publish-multi', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ page_ids: pageIds, message: message, link: link })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            page_ids: selectedPageIds,
+            message: caption,
+            media_type: mediaType,
+            media_url: finalMediaUrl || null,
+            boost_preset: boostPreset,
+            auto_create_rule: autoRule
+          })
         });
+
         const data = await res.json();
-        alert(`Амжилттай: ${data.success_count || 0} хуудсанд нийтлэгдлээ!`);
-        loadPublishedPosts();
-      } catch (e) {
-        alert('Нийтлэх явцад алдаа гарлаа: ' + e.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Сонгосон бүх хуудсанд нийтлэх';
+        progressContainer.classList.add('hidden');
+        const card = document.getElementById('publish-result-card');
+        card.classList.remove('hidden');
+
+        document.getElementById('publish-result-summary').innerText = 
+          `${data.published_count}/${data.total_targets} хуудсанд амжилттай нийтлэгдлээ!`;
+        document.getElementById('publish-result-badge').innerText = 
+          `${data.published_count} Facebook Post Created`;
+
+        // Render direct links
+        const linksContainer = document.getElementById('publish-result-links');
+        linksContainer.innerHTML = data.results.map(r => `
+          <div class="flex items-center justify-between p-3 rounded-xl border ${r.success ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'} text-xs">
+            <div class="flex items-center space-x-2 truncate">
+              <i class="fa-brands fa-facebook ${r.success ? 'text-blue-600' : 'text-rose-500'}"></i>
+              <span class="font-bold text-slate-800">${r.page_name}</span>
+            </div>
+            ${r.success ? `
+              <a href="${r.post_url}" target="_blank" class="px-3 py-1 bg-white hover:bg-slate-100 text-blue-600 border border-slate-200 rounded-lg font-bold flex items-center gap-1 shadow-sm transition">
+                <span>Facebook дээр үзэх</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              </a>
+            ` : `
+              <span class="text-rose-600 font-medium truncate max-w-xs">${r.error}</span>
+            `}
+          </div>
+        `).join('');
+
+        // Render Group Share Buttons
+        const sharesContainer = document.getElementById('post-group-shares-container');
+        if (data.group_shares && data.group_shares.length > 0) {
+          sharesContainer.innerHTML = data.group_shares.map(g => `
+            <button type="button" onclick="shareToFacebookGroup('${g.group_url}', '${encodeURIComponent(data.first_post_url)}', '${encodeURIComponent(caption)}')" class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between group transition">
+              <div class="truncate">
+                <span class="block text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">${g.name}</span>
+                <span class="block text-[10px] text-slate-400">${g.category}</span>
+              </div>
+              <span class="px-2 py-1 bg-blue-100 group-hover:bg-blue-600 group-hover:text-white text-blue-700 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
+                <i class="fa-solid fa-share mr-1"></i> Түгээх
+              </span>
+            </button>
+          `).join('');
         }
+
+        showToast(`${data.published_count} хуудсанд зэрэг нийтлэгдлээ!`);
+        loadPublishedPosts();
+        loadRules();
+        loadStats();
+      } catch (err) {
+        alert('Нийтлэх явцад алдаа гарлаа: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
       }
     }
 
-    function copyPostText() {
-      const msg = (document.getElementById('pub-message') || {}).value || '';
-      if (!msg) return;
-      navigator.clipboard.writeText(msg);
-      showToast('Текст хуулагдлаа! Одоо группүүд рүү орж нийтэлнэ үү.');
+    function shareToFacebookGroup(groupUrl, encodedPostUrl, encodedCaption) {
+      const postUrl = decodeURIComponent(encodedPostUrl);
+      const caption = decodeURIComponent(encodedCaption);
+
+      // Copy caption & post link to clipboard
+      navigator.clipboard.writeText(`${caption}\n\n🎬 Үзэх холбоос: ${postUrl}`);
+      showToast('📋 Постын тайлбар & линк хуулагдлаа! Групп дээр шууд Paste хийнэ үү');
+
+      // Open group in new tab
+      window.open(groupUrl, '_blank');
     }
 
-
-function toggleSelectAllPages(master) {
-  const cbs = document.querySelectorAll('input[name="pub_pages"]');
-  cbs.forEach(cb => cb.checked = master.checked);
-}
-
-function toggleAICaptionBox() {
-  const box = document.getElementById('ai-caption-box');
-  if (box) box.classList.toggle('hidden');
-}
-
-async function generateAICaptions() {
-  const title = document.getElementById('craft-title')?.value || '';
-  const genre = document.getElementById('craft-genre')?.value || '';
-  const details = document.getElementById('craft-details')?.value || '';
-  const btn = document.getElementById('craft-btn');
-  const resultsBox = document.getElementById('craft-results');
-  if (!title) {
-    alert('Киноны нэрийг оруулна уу');
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Зохиож байна...';
-  try {
-    const res = await fetch('/api/craft-caption', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ movie_title: title, genre: genre, key_details: details })
-    });
-    const data = await res.json();
-    if (data.captions && data.captions.length > 0) {
-      resultsBox.innerHTML = data.captions.map((cap, i) => {
-        let titleText = cap.title || ('Хувилбар ' + (i+1));
-        let hookBadge = cap.hook ? `<span class="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded font-medium">${cap.hook}</span>` : '';
-        let bodyText = cap.text || cap.caption || cap.body || (typeof cap === 'string' ? cap : JSON.stringify(cap));
-        return `
-        <div class="p-3 bg-white rounded-lg border border-purple-100 shadow-sm space-y-1">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-              <span class="text-xs font-bold text-purple-700">${titleText}</span>
-              ${hookBadge}
-            </div>
-            <button type="button" onclick="selectCaption(${i})" class="px-2 py-0.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded">Сонгох</button>
-          </div>
-          <p class="text-xs text-slate-700 whitespace-pre-line">${bodyText}</p>
-        </div>
-      `;
-      }).join('');
-      resultsBox.classList.remove('hidden');
-      window._generatedCaptions = data.captions;
-    } else {
-      alert(data.error || 'Алдаа гарлаа');
-    }
-  } catch(e) {
-    alert('Серверийн алдаа: ' + e);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-sparkles"></i> 3 Татах Хүчтэй Хувилбар Зохиох';
-  }
-}
-
-function selectCaption(idx) {
-  const cap = window._generatedCaptions?.[idx];
-  const textarea = document.getElementById('pub-message');
-  if (textarea && cap) {
-    textarea.value = cap.text || cap.caption || cap.body || (typeof cap === 'string' ? cap : '');
-    toggleAICaptionBox();
-  }
-}
-
-async function submitMultiPublish() {
-  const pageCheckboxes = document.querySelectorAll('input[name="pub_pages"]:checked');
-  const pageIds = Array.from(pageCheckboxes).map(cb => cb.value);
-  if (pageIds.length === 0) {
-    alert('Нийтлэх хуудсуудаа сонгоно уу!');
-    return;
-  }
-  const message = document.getElementById('pub-message')?.value || '';
-  if (!message.trim()) {
-    alert('Постын текст / тайлбарыг оруулна уу!');
-    return;
-  }
-  const mediaType = document.getElementById('pub-media-type')?.value || 'text';
-  const mediaUrl = document.getElementById('pub-media-url')?.value || '';
-  const boostPreset = document.getElementById('pub-boost-preset')?.value || 'standard';
-  const autoRule = document.getElementById('pub-auto-rule')?.checked ?? true;
-
-  const btn = document.getElementById('btn-publish-multi');
-  const resBox = document.getElementById('pub-result-box');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Нийтэлж байна...';
-  resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-blue-50 border-blue-200 text-blue-800';
-  resBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Сонгосон хуудсуудад зэрэг нийтэлж байна, түр хүлээнэ үү...';
-  resBox.classList.remove('hidden');
-
-  try {
-    const res = await fetch('/api/publish-multi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        page_ids: pageIds,
-        message: message,
-        media_type: mediaType,
-        media_url: mediaUrl,
-        boost_preset: boostPreset,
-        auto_add_comment_rule: autoRule
-      })
-    });
-    const data = await res.json();
-    if (data.results) {
-      let successCount = 0;
-      let html = '<p class="font-bold">Нийтлэлийн үр дүн:</p><ul class="space-y-1">';
-      data.results.forEach(r => {
-        if (r.status === 'success') {
-          successCount++;
-          html += `<li class="text-emerald-700">✓ <b>${r.page_name}</b>: Амжилттай нийтлэгдлээ. ${r.post_url ? `<a href="${r.post_url}" target="_blank" class="underline ml-1">Пост үзэх</a>` : ''}</li>`;
-        } else {
-          html += `<li class="text-rose-700">✗ <b>${r.page_name}</b>: Алдаа: ${r.error || 'Алдаа гарлаа'}</li>`;
+    async function loadPublishedPosts() {
+      try {
+        const res = await fetch('/api/published-posts');
+        const list = await res.json();
+        const container = document.getElementById('published-posts-history');
+        if (!container) return;
+        if (list.length === 0) {
+          container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">Одоогоор нийтлэгдсэн пост бүртгэгдээгүй байна.</div>`;
+          return;
         }
-      });
-      html += '</ul>';
-      resBox.className = successCount > 0 ? 'p-4 rounded-xl border text-xs space-y-2 bg-emerald-50 border-emerald-200 text-slate-800' : 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-slate-800';
-      resBox.innerHTML = html;
-      loadPublishedPosts();
-    } else {
-      resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-rose-800';
-      resBox.innerHTML = data.error || 'Нийтлэх явцад алдаа гарлаа';
+
+        container.innerHTML = list.map(p => `
+          <div class="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-slate-50 transition">
+            <div class="flex items-start space-x-3 max-w-xl truncate">
+              <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+                ${p.media_type === 'image' ? '<i class="fa-solid fa-image"></i>' : p.media_type === 'video' ? '<i class="fa-solid fa-film"></i>' : '<i class="fa-solid fa-align-left"></i>'}
+              </div>
+              <div class="truncate">
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-xs text-slate-900 truncate">${p.page_name}</h4>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">${p.boost_command || 'standard'}</span>
+                </div>
+                <p class="text-xs text-slate-500 truncate mt-0.5" title="${p.message}">${p.message}</p>
+                <span class="text-[10px] text-slate-400">${p.created_at}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <a href="${p.post_url}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition flex items-center gap-1">
+                <span>Facebook дээр үзэх</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              </a>
+              <button onclick="sharePublishedPostToGroups('${p.post_url}', '${encodeURIComponent(p.message || '')}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition" title="Группүүдэд түгээх">
+                <i class="fa-solid fa-share-nodes"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error("Error loading published posts:", e);
+      }
     }
-  } catch(e) {
-    resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-rose-800';
-    resBox.innerHTML = 'Серверийн алдаа: ' + e;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Сонгосон бүх хуудсанд зэрэг нийтлэх';
-  }
-}
 
-async function submitAddGroup() {
-  return saveNewGroup();
-}
+    function sharePublishedPostToGroups(postUrl, encodedCaption) {
+      const caption = decodeURIComponent(encodedCaption);
+      navigator.clipboard.writeText(`${caption}\n\n🎬 Шууд үзэх: ${postUrl}`);
+      showToast('📋 Постын мэдээлэл хуулагдлаа! Доорх группүүд дээр шууд хуваалцаарай.');
+      switchTab('publisher');
+      window.scrollTo({ top: 500, behavior: 'smooth' });
+    }
 
-async function saveNewGroup() {
-  const name = document.getElementById('grp-name')?.value || '';
-  const url = document.getElementById('grp-url')?.value || '';
-  const cat = document.getElementById('grp-category')?.value || '';
-  if (!name || !url) {
-    alert('Группын нэр болон холбоосыг оруулна уу');
-    return;
-  }
-  try {
-    const res = await fetch('/api/groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group_name: name, group_url: url, category: cat })
+    async function loadGroups() {
+      try {
+        const res = await fetch('/api/groups');
+        targetGroups = await res.json();
+        const container = document.getElementById('target-groups-list');
+        if (!container) return;
+        if (targetGroups.length === 0) {
+          container.innerHTML = `<p class="text-xs text-slate-400">Групп бүртгэгдээгүй байна.</p>`;
+          return;
+        }
+
+        container.innerHTML = targetGroups.map(g => `
+          <div class="p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 flex items-center justify-between text-xs transition">
+            <div class="truncate mr-2">
+              <h5 class="font-bold text-slate-800 truncate">${g.group_name}</h5>
+              <a href="${g.group_url}" target="_blank" class="text-[10px] text-blue-600 hover:underline truncate block">${g.group_url}</a>
+            </div>
+            <div class="flex items-center space-x-1 shrink-0">
+              <a href="${g.group_url}" target="_blank" class="p-1.5 text-slate-400 hover:text-blue-600" title="Нээх">
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+              </a>
+              <button onclick="deleteGroup(${g.id})" class="p-1.5 text-slate-400 hover:text-rose-500" title="Устгах">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error("Error loading groups:", e);
+      }
+    }
+
+    function toggleGroupForm() {
+      const form = document.getElementById('form-add-group');
+      form.classList.toggle('hidden');
+    }
+
+    async function addFacebookGroup(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-group-name').value.trim();
+      const url = document.getElementById('new-group-url').value.trim();
+      if (!name || !url) return;
+
+      try {
+        await fetch('/api/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ group_name: name, group_url: url })
+        });
+        document.getElementById('form-add-group').reset();
+        toggleGroupForm();
+        showToast('Шинэ групп амжилттай нэмэгдлээ');
+        loadGroups();
+      } catch (e) {
+        alert('Алдаа: ' + e.message);
+      }
+    }
+
+    async function deleteGroup(id) {
+      if (!confirm('Энэ группыг хасах уу?')) return;
+      try {
+        await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+        showToast('Групп хасагдлаа');
+        loadGroups();
+      } catch (e) {
+        alert('Алдаа: ' + e.message);
+      }
+    }
+
+    // Drag and Drop listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      refreshData();
+
+      const dropZone = document.getElementById('drop-zone');
+      if (dropZone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+          dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('border-indigo-600', 'bg-indigo-50/80');
+          }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+          dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('border-indigo-600', 'bg-indigo-50/80');
+          }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files && files.length > 0) {
+            processSelectedFile(files[0]);
+          }
+        }, false);
+      }
     });
-    const data = await res.json();
-    if (data.status === 'ok') {
-      document.getElementById('grp-name').value = '';
-      document.getElementById('grp-url').value = '';
-      document.getElementById('grp-category').value = '';
-      loadPublisherGroups();
-    } else {
-      alert(data.error || 'Алдаа гарлаа');
-    }
-  } catch(e) {
-    alert('Серверийн алдаа: ' + e);
-  }
-}
-
-async function deleteGroup(id) {
-  if (!confirm('Энэ группыг хасах уу?')) return;
-  try {
-    await fetch(`/api/groups/${id}`, { method: 'DELETE' });
-    loadPublisherGroups();
-  } catch(e) {
-    alert('Алдаа: ' + e);
-  }
-}
-
-// Init
-    window.addEventListener('DOMContentLoaded', refreshData);
   </script>
 </body>
 </html>

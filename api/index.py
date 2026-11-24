@@ -69,8 +69,11 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            with open(p, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
@@ -136,6 +139,54 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
         # Тухайн хуудасны Page Access Token-г дуудах
         page_token = database.get_page_token(page_id) or settings.get("fb_page_access_token", "")
 
+        # --- 1. DIRECT MESSENGER CHAT (Шууд Messenger чатаар ирсэн зурваст хариулах) ---
+        for msg_event in entry.get("messaging", []):
+            sender_id = str(msg_event.get("sender", {}).get("id") or "")
+            if sender_id == page_id or not sender_id:
+                continue
+            msg_obj = msg_event.get("message", {})
+            if msg_obj.get("is_echo"):
+                continue
+            msg_id = str(msg_obj.get("mid") or "")
+            msg_text = str(msg_obj.get("text") or "").strip()
+            if not msg_text or not msg_id:
+                continue
+
+            if database.is_comment_processed(msg_id):
+                continue
+
+            print(f"[Processing Direct Messenger]: Page: {page_id}, Sender: {sender_id}, Text: {msg_text}")
+            analysis = await ai_service.analyze_and_generate_replies(
+                comment_text=msg_text,
+                sender_name="Үйлчлүүлэгч",
+                post_name="Facebook Messenger Чаат",
+                settings=settings,
+                custom_public_template=default_public_reply,
+                custom_private_template=default_private_reply
+            )
+            chat_reply_msg = analysis.get("private_reply") or default_private_reply
+
+            if page_token:
+                await facebook_service.send_direct_chat_reply(
+                    recipient_id=sender_id,
+                    message=chat_reply_msg,
+                    access_token=page_token
+                )
+
+            database.log_comment(
+                comment_id=msg_id,
+                post_id="direct_chat",
+                sender_id=sender_id,
+                sender_name="Чат хэрэглэгч",
+                comment_text=msg_text,
+                sentiment=analysis.get("sentiment", "neutral"),
+                intent=analysis.get("intent", "chat_query"),
+                public_reply="[Direct Messenger Chat]",
+                private_reply=chat_reply_msg,
+                phone=analysis.get("phone")
+            )
+
+        # --- 2. POST COMMENTS (Постын коммент дээр хариулах) ---
         for change in entry.get("changes", []):
             field = change.get("field")
             val = change.get("value", {})
@@ -280,7 +331,7 @@ async def export_leads_csv():
     writer.writerow(["ID", "Хэрэглэгчийн Нэр", "Утасны Дугаар", "Коммент", "Төлөв", "Тэмдэглэл", "Огноо"])
     for l in leads:
         writer.writerow([l["id"], l["sender_name"], l["phone_number"], l["comment_text"], l["status"], l["notes"], l["created_at"]])
-
+    
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -306,7 +357,7 @@ async def update_settings(payload: Dict[str, Any]):
 @app.post("/sync-comments")
 async def sync_recent_comments(limit: int = 1):
     """
-    Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж
+    Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж 
     хариулаагүй үлдсэн комментууд руу шууд хариу илгээх функц (Хурдан 5-8 сек-д багтана)
     """
     settings = database.get_settings()
@@ -505,7 +556,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
             "QPay-ээр шууд төлөөд эрхээ нээнэ үү! 🎬✨"
         )
     else:
-        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
+        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
 
     results = []
     first_post_url = ""
@@ -623,36 +674,18 @@ class CaptionCraftRequest(BaseModel):
     movie_title: str
     genre: Optional[str] = "Драма, Кино"
     extra_details: Optional[str] = ""
-    key_details: Optional[str] = ""
 
 @app.post("/api/ai-craft-caption")
 @app.post("/ai-craft-caption")
-@app.post("/api/craft-caption")
-@app.post("/craft-caption")
 async def ai_craft_caption_endpoint(payload: CaptionCraftRequest):
     """
     Gemini 3.5 AI-аар Facebook постын татах хүчтэй, үнэ & линктэй монгол текст үүсгэх
     """
     settings = database.get_settings()
-    details = payload.key_details or payload.extra_details or ""
     res = await ai_service.craft_post_caption(
         movie_title=payload.movie_title,
         genre=payload.genre or "Драма",
-        extra_details=details,
+        extra_details=payload.extra_details or "",
         settings=settings
     )
-    if not isinstance(res, dict) or "error" in res:
-        return res
-    cap = res.get("caption", "")
-    short_cap = res.get("short_caption", "")
-    captions = [
-        {"title": "Хувилбар 1: Дэлгэрэнгүй & Сэтгэл хөдөлгөм", "hook": "Анхаарал татах дэлгэрэнгүй тайлбар", "text": cap},
-        {"title": "Хувилбар 2: Богино & Вирал уриалга", "hook": "Шууд үзэх уриалга", "text": short_cap or cap},
-        {"title": "Хувилбар 3: Нууцлаг & Драма өрнөл", "hook": "Сонирхол өдөөх нууцлаг тайлбар", "text": f"🎬 {payload.movie_title}\n\nҮйл явдал улам ээдрээтэй болсоор байна... Та үзэж амжсан уу?\n\n💬 Сэтгэгдлээ хуваалцаарай!\n\n✨ Дэлгэрэнгүй мэдээллийг чатаар аваарай."}
-    ]
-    return {
-        "status": "ok",
-        "caption": cap,
-        "short_caption": short_cap,
-        "captions": captions
-        }
+    return res

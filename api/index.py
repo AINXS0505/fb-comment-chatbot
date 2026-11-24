@@ -9,7 +9,8 @@ from fastapi import FastAPI, Request, Response, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 # Ensure project root is in sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -504,7 +505,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
             "QPay-ээр шууд төлөөд эрхээ нээнэ үү! 🎬✨"
         )
     else:
-        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
+        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
 
     results = []
     first_post_url = ""

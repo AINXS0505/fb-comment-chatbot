@@ -279,7 +279,7 @@ async def export_leads_csv():
     writer.writerow(["ID", "Хэрэглэгчийн Нэр", "Утасны Дугаар", "Коммент", "Төлөв", "Тэмдэглэл", "Огноо"])
     for l in leads:
         writer.writerow([l["id"], l["sender_name"], l["phone_number"], l["comment_text"], l["status"], l["notes"], l["created_at"]])
-    
+
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -305,7 +305,7 @@ async def update_settings(payload: Dict[str, Any]):
 @app.post("/sync-comments")
 async def sync_recent_comments(limit: int = 1):
     """
-    Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж 
+    Гар утаснаас эсвэл автомат цагаар сүүлийн постын комментуудыг шалгаж
     хариулаагүй үлдсэн комментууд руу шууд хариу илгээх функц (Хурдан 5-8 сек-д багтана)
     """
     settings = database.get_settings()
@@ -446,3 +446,194 @@ async def test_simulate(payload: SimulateRequest):
     )
 
     return analysis
+
+# --- MULTI-PAGE PUBLISHING & SMART VIRAL DISTRIBUTION ENDPOINTS ---
+
+class MultiPublishRequest(BaseModel):
+    page_ids: List[str]  # List of page IDs, or ["all"]
+    message: str
+    media_type: Optional[str] = "text"  # "text", "image", "video"
+    media_url: Optional[str] = None
+    link_url: Optional[str] = "https://www.huree.site"
+    boost_preset: Optional[str] = "standard"  # "standard", "vip", "chat_cta", "qpay_fast", "custom"
+    auto_create_rule: Optional[bool] = True
+    custom_public_reply: Optional[str] = None
+    custom_private_reply: Optional[str] = None
+
+@app.post("/api/publish-multi")
+@app.post("/publish-multi")
+async def publish_multi_pages(payload: MultiPublishRequest):
+    """
+    Сонгосон бүх Facebook хуудсуудад нэг зэрэг зураг/постер, видео, текст нийтлэх,
+    тус бүрд нь комманд өгч тохируулах ба группын автомат share линкүүд үүсгэх.
+    """
+    settings = database.get_settings()
+    all_pages = database.get_connected_pages()
+
+    # Сонгогдсон хуудсуудыг шүүх
+    if "all" in payload.page_ids or len(payload.page_ids) == 0:
+        target_pages = all_pages
+    else:
+        target_ids = [str(x) for x in payload.page_ids]
+        target_pages = [p for p in all_pages if str(p["page_id"]) in target_ids]
+
+    if not target_pages:
+        raise HTTPException(status_code=400, detail="Нийтлэх хуудас сонгогдоогүй байна.")
+
+    # Message formatting by boost preset
+    final_message = payload.message.strip()
+    if payload.boost_preset == "standard":
+        if "huree.site" not in final_message.lower():
+            final_message += "\n\n🎬 Үзэх холбоос: https://www.huree.site (1 кино 3,900₮ | Бүх кино 15,900₮ QPay)"
+    elif payload.boost_preset == "vip":
+        if "huree.site" not in final_message.lower():
+            final_message += "\n\n🔥 VIP киноны эрхээ QPay-ээр шуурхай нээн үзээрэй: https://www.huree.site (1000+ кино бэлэн)"
+    elif payload.boost_preset == "chat_cta":
+        final_message += "\n\n💬 Кино үзэх холбоосыг шууд авахын тулд доор 'Үзэх' гэж коммент бичээрэй! Манай AI бот чатаар шууд илгээнэ 🍿✨"
+    elif payload.boost_preset == "qpay_fast":
+        final_message += "\n\n⚡ QPay-ээр шууд төлөөд 1 кино 3,900₮, бүх кино 15,900₮-өөр үзээрэй: https://www.huree.site"
+
+    # Auto-reply templates to bind to this post
+    pub_reply = payload.custom_public_reply or "Сайн байна уу! Кино үзэх холбоос болон үнийн дэлгэрэнгүйг хувийн чатаар тань илгээлээ. Та чатаа шалгаарай 🍿✨"
+    if payload.boost_preset == "vip":
+        priv_reply = (
+            "Сайн байна уу! 🔥\n\n"
+            "VIP киноны урамшуулал зарлагдлаа! https://www.huree.site сайтаар ороод 1000+ киноноос хүссэнээ үзээрэй.\n\n"
+            "🔹 1 кино — 3,900₮\n"
+            "🔹 Бүх кино — 15,900₮\n\n"
+            "QPay-ээр шууд төлөөд эрхээ нээнэ үү! 🎬✨"
+        )
+    else:
+        priv_reply = payload.custom_private_reply or settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
+
+    results = []
+    first_post_url = ""
+
+    for page in target_pages:
+        pid = str(page["page_id"])
+        pname = page["page_name"]
+        token = page["access_token"]
+
+        pub_res = await facebook_service.publish_post_to_page(
+            page_id=pid,
+            access_token=token,
+            message=final_message,
+            media_type=payload.media_type or "text",
+            media_url=payload.media_url,
+            link_url=payload.link_url
+        )
+
+        if pub_res.get("success"):
+            post_id = pub_res["post_id"]
+            post_url = pub_res["post_url"]
+            if not first_post_url:
+                first_post_url = post_url
+
+            # Record into published_posts database
+            database.save_published_post(
+                page_id=pid,
+                page_name=pname,
+                post_id=post_id,
+                post_url=post_url,
+                message=final_message,
+                media_type=payload.media_type or "text",
+                media_url=payload.media_url,
+                boost_command=payload.boost_preset
+            )
+
+            # Auto create rule for this post ID so comments are auto-replied!
+            if payload.auto_create_rule:
+                database.save_post_rule({
+                    "post_id": post_id,
+                    "post_name": f"{pname} - Шинэ пост ({datetime.now().strftime('%m/%d %H:%M')})",
+                    "keywords": "үргэлжлэл,хэд,үнэ,үзэх,линк,хаана,кино,сонирхож,байна,багц,qpay",
+                    "public_reply_template": pub_reply,
+                    "private_reply_template": priv_reply,
+                    "use_ai": 1,
+                    "is_active": 1
+                })
+
+            results.append({
+                "success": True,
+                "page_id": pid,
+                "page_name": pname,
+                "post_id": post_id,
+                "post_url": post_url
+            })
+        else:
+            results.append({
+                "success": False,
+                "page_id": pid,
+                "page_name": pname,
+                "error": pub_res.get("error", "Failed to publish")
+            })
+
+    # Group Share Links for viral group distribution
+    groups = database.get_facebook_groups()
+    share_url_target = first_post_url or (results[0].get("post_url") if results and results[0].get("success") else "https://www.huree.site")
+    group_shares = facebook_service.build_group_share_links(share_url_target, final_message, groups)
+
+    return {
+        "status": "ok",
+        "published_count": sum(1 for r in results if r.get("success")),
+        "total_targets": len(target_pages),
+        "results": results,
+        "first_post_url": share_url_target,
+        "group_shares": group_shares
+    }
+
+@app.get("/api/published-posts")
+@app.get("/published-posts")
+async def get_published_posts_endpoint(limit: int = 50):
+    """Сүүлд нийтлэгдсэн постуудын түүх авах"""
+    return database.get_published_posts(limit)
+
+@app.delete("/api/published-posts/{row_id}")
+@app.delete("/published-posts/{row_id}")
+async def delete_published_post_endpoint(row_id: int):
+    database.delete_published_post(row_id)
+    return {"status": "ok"}
+
+@app.get("/api/groups")
+@app.get("/groups")
+async def get_groups_endpoint():
+    """Холбогдсон зорилтот Facebook группүүдийг авах"""
+    return database.get_facebook_groups()
+
+class GroupCreateRequest(BaseModel):
+    group_name: str
+    group_url: str
+    category: Optional[str] = "Кино & Сонирхогчид"
+
+@app.post("/api/groups")
+@app.post("/groups")
+async def add_group_endpoint(payload: GroupCreateRequest):
+    """Шинэ зорилтот Facebook групп нэмэх"""
+    gid = database.save_facebook_group(payload.group_name, payload.group_url, payload.category or "Кино")
+    return {"status": "ok", "id": gid}
+
+@app.delete("/api/groups/{group_id}")
+@app.delete("/groups/{group_id}")
+async def delete_group_endpoint(group_id: int):
+    database.delete_facebook_group(group_id)
+    return {"status": "ok"}
+
+class CaptionCraftRequest(BaseModel):
+    movie_title: str
+    genre: Optional[str] = "Драма, Кино"
+    extra_details: Optional[str] = ""
+
+@app.post("/api/ai-craft-caption")
+@app.post("/ai-craft-caption")
+async def ai_craft_caption_endpoint(payload: CaptionCraftRequest):
+    """
+    Gemini 3.5 AI-аар Facebook постын татах хүчтэй, үнэ & линктэй монгол текст үүсгэх
+    """
+    settings = database.get_settings()
+    res = await ai_service.craft_post_caption(
+        movie_title=payload.movie_title,
+        genre=payload.genre or "Драма",
+        extra_details=payload.extra_details or "",
+        settings=settings
+    )
+    return res

@@ -641,4 +641,18 @@ async def ai_craft_caption_endpoint(payload: CaptionCraftRequest):
         extra_details=details,
         settings=settings
     )
-    return res
+    if not isinstance(res, dict) or "error" in res:
+        return res
+    cap = res.get("caption", "")
+    short_cap = res.get("short_caption", "")
+    captions = [
+        {"title": "Хувилбар 1: Дэлгэрэнгүй & Сэтгэл хөдөлгөм", "hook": "Анхаарал татах дэлгэрэнгүй тайлбар", "text": cap},
+        {"title": "Хувилбар 2: Богино & Вирал уриалга", "hook": "Шууд үзэх уриалга", "text": short_cap or cap},
+        {"title": "Хувилбар 3: Нууцлаг & Драма өрнөл", "hook": "Сонирхол өдөөх нууцлаг тайлбар", "text": f"🎬 {payload.movie_title}\n\nҮйл явдал улам ээдрээтэй болсоор байна... Та үзэж амжсан уу?\n\n💬 Сэтгэгдлээ хуваалцаарай!\n\n✨ Дэлгэрэнгүй мэдээллийг чатаар аваарай."}
+    ]
+    return {
+        "status": "ok",
+        "caption": cap,
+        "short_caption": short_cap,
+        "captions": captions
+        }

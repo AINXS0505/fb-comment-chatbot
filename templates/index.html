@@ -970,7 +970,7 @@
       }
     }
 
-    
+
     async function loadPublisherPages() {
       try {
         const res = await fetch('/api/pages');
@@ -1132,7 +1132,174 @@
       showToast('Текст хуулагдлаа! Одоо группүүд рүү орж нийтэлнэ үү.');
     }
 
-    // Init
+    
+function toggleSelectAllPages(master) {
+  const cbs = document.querySelectorAll('input[name="pub_pages"]');
+  cbs.forEach(cb => cb.checked = master.checked);
+}
+
+function toggleAICaptionBox() {
+  const box = document.getElementById('ai-caption-box');
+  if (box) box.classList.toggle('hidden');
+}
+
+async function generateAICaptions() {
+  const title = document.getElementById('craft-title')?.value || '';
+  const genre = document.getElementById('craft-genre')?.value || '';
+  const details = document.getElementById('craft-details')?.value || '';
+  const btn = document.getElementById('craft-btn');
+  const resultsBox = document.getElementById('craft-results');
+  if (!title) {
+    alert('Киноны нэрийг оруулна уу');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Зохиож байна...';
+  try {
+    const res = await fetch('/api/craft-caption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ movie_title: title, genre: genre, key_details: details })
+    });
+    const data = await res.json();
+    if (data.captions && data.captions.length > 0) {
+      resultsBox.innerHTML = data.captions.map((cap, i) => `
+        <div class="p-3 bg-white rounded-lg border border-purple-100 shadow-sm space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-purple-700">Хувилбар ${i+1}: ${cap.hook || 'Хувилбар'}</span>
+            <button type="button" onclick="selectCaption(${i})" class="px-2 py-0.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded">Сонгох</button>
+          </div>
+          <p class="text-xs text-slate-700 whitespace-pre-line">${cap.body || cap}</p>
+        </div>
+      `).join('');
+      resultsBox.classList.remove('hidden');
+      window._generatedCaptions = data.captions;
+    } else {
+      alert(data.error || 'Алдаа гарлаа');
+    }
+  } catch(e) {
+    alert('Серверийн алдаа: ' + e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-sparkles"></i> 3 Татах Хүчтэй Хувилбар Зохиох';
+  }
+}
+
+function selectCaption(idx) {
+  const cap = window._generatedCaptions?.[idx];
+  const textarea = document.getElementById('pub-message');
+  if (textarea && cap) {
+    textarea.value = (cap.hook ? cap.hook + '\n\n' : '') + (cap.body || cap);
+    toggleAICaptionBox();
+  }
+}
+
+async function submitMultiPublish() {
+  const pageCheckboxes = document.querySelectorAll('input[name="pub_pages"]:checked');
+  const pageIds = Array.from(pageCheckboxes).map(cb => cb.value);
+  if (pageIds.length === 0) {
+    alert('Нийтлэх хуудсуудаа сонгоно уу!');
+    return;
+  }
+  const message = document.getElementById('pub-message')?.value || '';
+  if (!message.trim()) {
+    alert('Постын текст / тайлбарыг оруулна уу!');
+    return;
+  }
+  const mediaType = document.getElementById('pub-media-type')?.value || 'text';
+  const mediaUrl = document.getElementById('pub-media-url')?.value || '';
+  const boostPreset = document.getElementById('pub-boost-preset')?.value || 'standard';
+  const autoRule = document.getElementById('pub-auto-rule')?.checked ?? true;
+
+  const btn = document.getElementById('btn-publish-multi');
+  const resBox = document.getElementById('pub-result-box');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Нийтэлж байна...';
+  resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-blue-50 border-blue-200 text-blue-800';
+  resBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Сонгосон хуудсуудад зэрэг нийтэлж байна, түр хүлээнэ үү...';
+  resBox.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/publish-multi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page_ids: pageIds,
+        message: message,
+        media_type: mediaType,
+        media_url: mediaUrl,
+        boost_preset: boostPreset,
+        auto_add_comment_rule: autoRule
+      })
+    });
+    const data = await res.json();
+    if (data.results) {
+      let successCount = 0;
+      let html = '<p class="font-bold">Нийтлэлийн үр дүн:</p><ul class="space-y-1">';
+      data.results.forEach(r => {
+        if (r.status === 'success') {
+          successCount++;
+          html += `<li class="text-emerald-700">✓ <b>${r.page_name}</b>: Амжилттай нийтлэгдлээ. ${r.post_url ? `<a href="${r.post_url}" target="_blank" class="underline ml-1">Пост үзэх</a>` : ''}</li>`;
+        } else {
+          html += `<li class="text-rose-700">✗ <b>${r.page_name}</b>: Алдаа: ${r.error || 'Алдаа гарлаа'}</li>`;
+        }
+      });
+      html += '</ul>';
+      resBox.className = successCount > 0 ? 'p-4 rounded-xl border text-xs space-y-2 bg-emerald-50 border-emerald-200 text-slate-800' : 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-slate-800';
+      resBox.innerHTML = html;
+      loadPublishedPosts();
+    } else {
+      resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-rose-800';
+      resBox.innerHTML = data.error || 'Нийтлэх явцад алдаа гарлаа';
+    }
+  } catch(e) {
+    resBox.className = 'p-4 rounded-xl border text-xs space-y-2 bg-rose-50 border-rose-200 text-rose-800';
+    resBox.innerHTML = 'Серверийн алдаа: ' + e;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Сонгосон бүх хуудсанд зэрэг нийтлэх';
+  }
+}
+
+async function saveNewGroup() {
+  const name = document.getElementById('grp-name')?.value || '';
+  const url = document.getElementById('grp-url')?.value || '';
+  const cat = document.getElementById('grp-category')?.value || '';
+  if (!name || !url) {
+    alert('Группын нэр болон холбоосыг оруулна уу');
+    return;
+  }
+  try {
+    const res = await fetch('/api/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_name: name, group_url: url, category: cat })
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      document.getElementById('grp-name').value = '';
+      document.getElementById('grp-url').value = '';
+      document.getElementById('grp-category').value = '';
+      loadPublisherGroups();
+    } else {
+      alert(data.error || 'Алдаа гарлаа');
+    }
+  } catch(e) {
+    alert('Серверийн алдаа: ' + e);
+  }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Энэ группыг хасах уу?')) return;
+  try {
+    await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+    loadPublisherGroups();
+  } catch(e) {
+    alert('Алдаа: ' + e);
+  }
+}
+
+// Init
     window.addEventListener('DOMContentLoaded', refreshData);
   </script>
 </body>

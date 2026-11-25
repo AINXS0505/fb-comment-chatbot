@@ -70,9 +70,8 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    return HTMLResponse(content=f.read())
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---

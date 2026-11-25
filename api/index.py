@@ -70,8 +70,9 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            with open(p, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
@@ -780,6 +781,20 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
     else:
         remaining_pages = [p for p in all_pages if str(p["page_id"]) in target_ids and str(p["page_id"]) != pid]
 
+    # Explicitly whitelist all target pages on Meta for crossposting
+    try:
+        allow_payload = [{"page_id": str(p["page_id"]), "allow": True} for p in remaining_pages]
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(
+                f"https://graph.facebook.com/v21.0/{payload.video_id}",
+                data={
+                    "allow_crossposting_for_pages": json.dumps(allow_payload),
+                    "access_token": tok
+                }
+            )
+    except Exception as allow_err:
+        print(f"[Allow Crossposting Warning]: {allow_err}")
+
     # Replicate instantly across all selected pages using Facebook Native Crossposting API (<1s per page, handles 500MB+)
     async with httpx.AsyncClient(timeout=30.0) as client:
         for p in remaining_pages:
@@ -803,7 +818,11 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
                 if cp_res.status_code == 200 and ("id" in cp_data or "post_id" in cp_data):
                     r_post_id = str(cp_data.get("post_id") or cp_data.get("id"))
                 else:
-                    err_msg = cp_data.get("error", {}).get("message", "Crosspost failed")
+                    raw_err = cp_data.get("error", {}).get("message", "Crosspost failed")
+                    if "No permission due to music rights" in raw_err:
+                        err_msg = "Meta дууны эрх илрүүлсэн тул зөвхөн Facebook сайт дээрээс Share хийж болно"
+                    else:
+                        err_msg = raw_err
             except Exception as e:
                 err_msg = str(e)
 
@@ -943,6 +962,21 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
     pub_reply = settings.get("default_public_reply", "Сайн байна уу! Чатаар дэлгэрэнгүй мэдээлэл болон үзэх линк илгээлээ.")
     priv_reply = settings.get("default_private_reply", database.HUREE_PROMO_TEXT)
 
+    # Whitelist pages on Meta before crossposting
+    try:
+        p_tok = all_pages[0]["access_token"]
+        allow_payload = [{"page_id": str(p["page_id"]), "allow": True} for p in pages_to_post]
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(
+                f"https://graph.facebook.com/v21.0/{clean_vid_id}",
+                data={
+                    "allow_crossposting_for_pages": json.dumps(allow_payload),
+                    "access_token": p_tok
+                }
+            )
+    except Exception as allow_err:
+        print(f"[Allow Crossposting Warning]: {allow_err}")
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         for p in pages_to_post:
             r_pid = str(p["page_id"])
@@ -983,7 +1017,12 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
                         })
                     results.append({"success": True, "page_name": r_name, "page_id": r_pid, "post_id": r_post_id, "post_url": r_post_url})
                 else:
-                    results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": cp_data.get("error", {}).get("message", "Crosspost failed")})
+                    raw_err = cp_data.get("error", {}).get("message", "Crosspost failed")
+                    if "No permission due to music rights" in raw_err:
+                        err_msg = "Meta дууны эрх илрүүлсэн тул зөвхөн Facebook сайт дээрээс Share хийж болно"
+                    else:
+                        err_msg = raw_err
+                    results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": err_msg})
             except Exception as e:
                 results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": str(e)})
 

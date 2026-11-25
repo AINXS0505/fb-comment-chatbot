@@ -298,6 +298,7 @@ class PostRuleSchema(BaseModel):
     is_active: Optional[int] = 1
 
 @app.post("/api/rules")
+
 @app.post("/rules")
 async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
@@ -598,6 +599,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
                 page_name=pname,
                 post_id=post_id,
                 post_url=post_url,
+            
                 message=final_message,
                 media_type=payload.media_type or "text",
                 media_url=payload.media_url,
@@ -782,7 +784,7 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
 
     # Explicitly whitelist all target pages on Meta for crossposting
     try:
-        allow_payload = [{"page_id": str(p["page_id"]), "allow": True} for p in remaining_pages]
+        allow_payload = [{"page_id": str(p["page_id"]), "allow": True} for p in (remaining_pages or all_pages)]
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(
                 f"https://graph.facebook.com/v21.0/{payload.video_id}",
@@ -848,6 +850,8 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
                     })
                 results.append({
                     "success": True,
+
+
                     "page_id": r_pid,
                     "page_name": r_name,
                     "post_id": r_post_id,
@@ -963,16 +967,18 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
 
     # Whitelist pages on Meta before crossposting
     try:
-        p_tok = all_pages[0]["access_token"]
         allow_payload = [{"page_id": str(p["page_id"]), "allow": True} for p in pages_to_post]
         async with httpx.AsyncClient(timeout=10.0) as client:
-            await client.post(
-                f"https://graph.facebook.com/v21.0/{clean_vid_id}",
-                data={
-                    "allow_crossposting_for_pages": json.dumps(allow_payload),
-                    "access_token": p_tok
-                }
-            )
+            for p in all_pages:
+                wh_res = await client.post(
+                    f"https://graph.facebook.com/v21.0/{clean_vid_id}",
+                    data={
+                        "allow_crossposting_for_pages": json.dumps(allow_payload),
+                        "access_token": p["access_token"]
+                    }
+                )
+                if wh_res.status_code == 200:
+                    break
     except Exception as allow_err:
         print(f"[Allow Crossposting Warning]: {allow_err}")
 

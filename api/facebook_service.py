@@ -40,14 +40,14 @@ async def send_public_comment_reply(comment_id: str, message: str, access_token:
 
     url = f"{GRAPH_API_URL}/{comment_id}/comments"
     params = {"access_token": access_token}
-    payload = {"message": message}
+    data = {"message": message}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, params=params, json=payload)
-            data = resp.json()
-            print(f"[Public Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {data}")
-            return data
+            resp = await client.post(url, params=params, data=data)
+            res_data = resp.json()
+            print(f"[Public Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {res_data}")
+            return res_data
     except Exception as e:
         print(f"[Public Reply Exception]: {e}")
         return {"error": str(e)}
@@ -63,21 +63,17 @@ async def send_private_messenger_reply(comment_id: str, message: str, access_tok
 
     url = f"{GRAPH_API_URL}/me/messages"
     params = {"access_token": access_token}
-    payload = {
-        "recipient": {
-            "comment_id": comment_id
-        },
-        "message": {
-            "text": message
-        }
+    data = {
+        "recipient[comment_id]": comment_id,
+        "message[text]": message
     }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, params=params, json=payload)
-            data = resp.json()
-            print(f"[Private Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {data}")
-            return data
+            resp = await client.post(url, params=params, data=data)
+            res_data = resp.json()
+            print(f"[Private Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {res_data}")
+            return res_data
     except Exception as e:
         print(f"[Private Reply Exception]: {e}")
         return {"error": str(e)}
@@ -93,21 +89,17 @@ async def send_direct_chat_reply(recipient_id: str, message: str, access_token: 
 
     url = f"{GRAPH_API_URL}/me/messages"
     params = {"access_token": access_token}
-    payload = {
-        "recipient": {
-            "id": recipient_id
-        },
-        "message": {
-            "text": message
-        }
+    data = {
+        "recipient[id]": recipient_id,
+        "message[text]": message
     }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, params=params, json=payload)
-            data = resp.json()
-            print(f"[Direct Chat Reply] Status: {resp.status_code}, Recipient: {recipient_id}, Response: {data}")
-            return data
+            resp = await client.post(url, params=params, data=data)
+            res_data = resp.json()
+            print(f"[Direct Chat Reply] Status: {resp.status_code}, Recipient: {recipient_id}, Response: {res_data}")
+            return res_data
     except Exception as e:
         print(f"[Direct Chat Reply Exception]: {e}")
         return {"error": str(e)}
@@ -158,6 +150,7 @@ async def publish_post_to_page(
                 if link_url:
                     payload["link"] = link_url
                 resp = await client.post(url, data=payload)
+
             data = resp.json()
             if resp.status_code == 200 and ("id" in data or "post_id" in data):
                 raw_post_id = data.get("post_id") or data.get("id")

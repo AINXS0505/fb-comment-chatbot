@@ -43,6 +43,7 @@ DEFAULT_PAGES = [
         "access_token": "EAAQEwsLb8KUBTONNvyW0TDyqyUbXTPk2VWi0DAgKVF6T1JVcZCG8nPASOOJEVo9cxUrRMG04KPpQcLfvFWoxnZCILJitRjNy3FfzJ40K1zzFZBfRt6ZBOqsw9xesOzjoyV2hv7oSp9l9ojXgxJr6XCuC6EGzX3563oaE6F4BTxftQUruEsKkZCnAzZCRu5aLqs7YAl3AHZCdjZC8k6pFM3MQZCp4ZD"
     }
 ]
+
 HUREE_PROMO_TEXT = (
     "Сайн байна уу! 🎬🍿\n\n"
     "https://www.huree.site энэ сайтаар ороод бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино Хүрээ дээр бий!\n\n"
@@ -141,7 +142,7 @@ def init_db():
     default_settings = {
         "ai_provider": "gemini",
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6K6ZUU9JlJKaq5ZH9rrwDHPCSJVpkKUO1Age7_-Utz--Q"),
-        "gemini_model": "gemini-3.5-flash-lite",
+        "gemini_model": "gemini-2.5-flash",
         "system_prompt": (
             "Та 'Хүрээ Кино' (https://www.huree.site), 'Nice Drama Ai', 'WOW Mini Drama' хуудсуудын найрсаг онлайн туслах юм.\n"
             "Үндсэн мэдээлэл:\n"
@@ -297,7 +298,6 @@ def delete_post_rule(rule_id: int):
     cursor.execute("DELETE FROM post_rules WHERE id = ?", (rule_id,))
     conn.commit()
     conn.close()
-
 def log_comment(comment_id: str, post_id: str, sender_id: str, sender_name: str,
                 comment_text: str, sentiment: str, intent: str,
                 public_reply: str, private_reply: str, phone: Optional[str] = None):

@@ -147,7 +147,12 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 continue
             msg_id = str(msg_obj.get("mid") or "")
             msg_text = str(msg_obj.get("text") or "").strip()
-            if not msg_text or not msg_id:
+            if not msg_text:
+                if msg_id and (msg_obj.get("attachments") or msg_obj.get("sticker_id")):
+                    msg_text = "Сайн байна уу"
+                else:
+                    continue
+            if not msg_id:
                 continue
 
             if database.is_comment_processed(msg_id):
@@ -200,6 +205,8 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 sender_id = str(sender.get("id") or "")
                 sender_name = sender.get("name", "Үйлчлүүлэгч")
                 comment_text = str(val.get("message") or "").strip()
+                if not comment_text and (val.get("attachment") or val.get("photo") or val.get("sticker_id")):
+                    comment_text = "Сайн байна уу"
 
                 if not comment_id:
                     continue
@@ -296,9 +303,9 @@ class PostRuleSchema(BaseModel):
     private_reply_template: Optional[str] = ""
     use_ai: Optional[int] = 1
     is_active: Optional[int] = 1
+    
 
 @app.post("/api/rules")
-
 @app.post("/rules")
 async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
@@ -599,7 +606,6 @@ async def publish_multi_pages(payload: MultiPublishRequest):
                 page_name=pname,
                 post_id=post_id,
                 post_url=post_url,
-            
                 message=final_message,
                 media_type=payload.media_type or "text",
                 media_url=payload.media_url,
@@ -646,6 +652,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
         "first_post_url": share_url_target,
         "group_shares": group_shares
     }
+
 
 # --- DIRECT BROWSER-TO-FACEBOOK RESUMABLE CHUNKED UPLOAD (500MB+ SUPPORT) ---
 
@@ -850,8 +857,6 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
                     })
                 results.append({
                     "success": True,
-
-
                     "page_id": r_pid,
                     "page_name": r_name,
                     "post_id": r_post_id,
@@ -876,7 +881,7 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
         "first_post_url": primary_post_url,
         "group_shares": group_shares
     }
-
+    
 
 @app.get("/api/post-metrics/{post_id}")
 @app.get("/post-metrics/{post_id}")

@@ -45,7 +45,7 @@ async def analyze_and_generate_replies(
     extracted_phone = extract_phone_number(comment_text)
     api_key = settings.get("gemini_api_key", "").strip()
     system_prompt = settings.get("system_prompt", "")
-    model_name = settings.get("gemini_model", "gemini-3.5-flash-lite")
+    model_name = settings.get("gemini_model", "gemini-2.5-flash")
 
     # If no API key provided, use direct Huree.site template
     if not api_key:
@@ -135,11 +135,8 @@ def fallback_rule_based_response(
         "public_reply": public_template or f"Сайн байна уу {sender_name}! Кино үзэх холбоос болон дэлгэрэнгүй мэдээллийг чатаар илгээлээ. Та чатаа шалгаарай 🍿✨",
         "private_reply": private_template or HUREE_PROMO_TEXT
     }
-
 async def craft_post_caption(
     movie_title: str,
-
-
     genre: str,
     extra_details: str,
     settings: Dict[str, str]

@@ -144,15 +144,17 @@ def init_db():
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6K6ZUU9JlJKaq5ZH9rrwDHPCSJVpkKUO1Age7_-Utz--Q"),
         "gemini_model": "gemini-2.5-flash",
         "system_prompt": (
-            "Та 'Хүрээ Кино' (https://www.huree.site), 'Nice Drama Ai', 'WOW Mini Drama' хуудсуудын найрсаг онлайн туслах юм.\n"
+            "Та 'Хүрээ Кино' (https://www.huree.site), 'Nice Drama Ai', 'WOW Mini Drama' хуудсуудын найрсаг онлайн зөвлөх туслах юм.\n"
             "Үндсэн мэдээлэл:\n"
             "- Вэбсайт: https://www.huree.site\n"
-            "- Бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино үзэх боломжтой.\n"
-            "- Үнэ: 1 кино — 3,900₮, Бүх кино үзэх багц — 15,900₮.\n"
-            "- Төлбөр: QPay-ээр шууд төлөөд эрхээ нээнэ. Өдөр бүр шинэ кино нэмэгддэг.\n"
+            "- Нийт киноны тоо: 1,000 гаруй (1000+) Монгол хэлтэй чанартай кино, mini drama бэлэн байгаа бөгөөд өдөр бүр шинэ кино нэмэгддэг.\n"
+            "- Үнэ: 1 кино — 3,900₮, Бүх киног үзэх VIP багц — 15,900₮ (1000+ бүх киног хязгааргүй үзнэ).\n"
+            "- Төлбөр: QPay-ээр шууд төлөөд 1 секундын дотор үзэх эрхээ нээнэ.\n"
+            "- Хэрхэн үзэх: https://www.huree.site сайт руу ороод бүртгүүлэн, киногоо сонгоод төлбөрөө хийж утас эсвэл компьютерээсээ шууд үзнэ.\n"
             "Дүрэм:\n"
-            "1. Хэрэглэгчийн коммент доор (public_reply): Эелдэг найрсаг мэндчилээд, кино үзэх холбоос болон дэлгэрэнгүйг хувийн чатаар илгээсэн тухай 1 өгүүлбэрээр бичиж, чатаа шалгахыг хүснэ.\n"
-            "2. Хувийн чатаар (private_reply): https://www.huree.site линк, 1 кино 3,900₮, бүх кино 15,900₮, QPay-ээр эрхээ шууд нээх мэдээллийг бүрэн дэлгэрэнгүй илгээнэ."
+            "1. Хэрэглэгчийн асуултад (хэдэн кинотой вэ, үнэ хэд вэ, хаанаас үзэх вэ г.м) яг тодорхой, эелдэг, дэлгэрэнгүй хариулна.\n"
+            "2. Коммент доор (public_reply): Асуултад нь шууд товч хариулаад, линк болон дэлгэрэнгүй мэдээллийг хувийн чатаар илгээсэн тухай 1-2 өгүүлбэрээр бичнэ.\n"
+            "3. Хувийн чатаар (private_reply): Асуултын дэлгэрэнгүй хариу, https://www.huree.site линк, үнэ (3,900₮ / 15,900₮), QPay зааврыг бүрэн дэлгэрэнгүй илгээнэ."
         ),
         "fb_page_access_token": DEFAULT_PAGES[0]["access_token"],
         "fb_verify_token": os.environ.get("VERIFY_TOKEN", "fb_chatbot_secret_verify_token"),
@@ -298,6 +300,7 @@ def delete_post_rule(rule_id: int):
     cursor.execute("DELETE FROM post_rules WHERE id = ?", (rule_id,))
     conn.commit()
     conn.close()
+
 def log_comment(comment_id: str, post_id: str, sender_id: str, sender_name: str,
                 comment_text: str, sentiment: str, intent: str,
                 public_reply: str, private_reply: str, phone: Optional[str] = None):

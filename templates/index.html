@@ -398,7 +398,6 @@
                   <span class="text-[10px] text-slate-400">Дөнгөж сая · 🌐 Нийтэд нээлттэй</span>
                 </div>
               </div>
-
               <!-- Caption -->
               <div class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto" id="preview-caption">
                 Постын тайлбар энд харагдана...
@@ -1568,7 +1567,7 @@
       // Check if URL is entered
       const url = document.getElementById('pub-media-url').value.trim();
       if (type === 'image' && url) {
-        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\\'p-4 text-xs text-rose-500\\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-rose-500\\'>Зургийн линк буруу байна</div>'" class="w-full h-full object-cover">`;
       } else if (type === 'video' && url) {
         box.innerHTML = `<video src="${url}" controls class="w-full h-full object-cover"></video>`;
       } else {
@@ -1598,6 +1597,26 @@
       if (!titleInput.value.trim()) {
         titleInput.value = "Шинэ Драма";
       }
+      generateAICaption();
+    }
+
+    async function generateAICaption() {
+      const movieTitle = document.getElementById('ai-movie-title').value.trim();
+      const genre = (document.getElementById('ai-selected-genre') && document.getElementById('ai-selected-genre').value) || 'Драма';
+      if (!movieTitle) {
+        alert('Киноны нэрийг оруулна уу');
+        return;
+      }
+      const btn = document.getElementById('btn-generate-caption');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI бичиж байна...`;
+
+      try {
+        const res = await fetch('/api/ai-craft-caption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ movie_title: movieTitle, genre: genre })
+        });
       generateAICaption();
     }
 
@@ -1707,8 +1726,9 @@
                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Facebook рүү хуулж байна (${info.pct}%)...`;
               });
 
-              progressStatus.innerHTML = `<i class="fa-solid fa-bolt text-amber-500 animate-pulse"></i> Үндсэн серверт орлоо! Бусад ${selectedPageIds.length} хуудас руу 2 секундэд түгээж байна...`;
-              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Бусад хуудсуудад түгээж байна...`;
+              // Алхам 1: Үндсэн хуудсанд (Huree Kino) эхлээд бүрэн нийтэлж баталгаажуулна
+              progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> 1-р алхам: Үндсэн хуудас (Huree Kino) дээр нийтэлж байна...`;
+              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Үндсэн хуудсанд нийтэлж байна...`;
 
               const finishRes = await fetch('/api/video-upload/finish-and-replicate', {
                 method: 'POST',
@@ -1717,16 +1737,89 @@
                   primary_page_id: uploadInfo.page_id,
                   upload_session_id: uploadInfo.upload_session_id,
                   video_id: uploadInfo.video_id,
-                  target_page_ids: selectedPageIds,
+                  target_page_ids: [uploadInfo.page_id],
                   message: caption,
                   boost_preset: boostPreset,
                   auto_create_rule: autoRule
                 })
               });
 
-              const data = await finishRes.json();
+              const primaryData = await finishRes.json();
+              const primaryUrl = primaryData.first_post_url || (primaryData.results && primaryData.results[0] ? primaryData.results[0].post_url : `https://www.facebook.com/reel/${uploadInfo.video_id}/`);
+
+              // Алхам 2: Бусад 5 хуудас сонгогдсон бол Facebook бичлэгийг боловсруулахыг түр хүлээж байгаад түгээнэ
+              const remainingPageIds = selectedPageIds.filter(id => id !== uploadInfo.page_id);
+              let allCombinedResults = primaryData.results || [{
+                success: true,
+                page_id: uploadInfo.page_id,
+                page_name: "Huree Kino www.huree.site",
+                post_id: uploadInfo.video_id,
+                post_url: primaryUrl
+              }];
+
+              if (remainingPageIds.length > 0) {
+                progressStatus.innerHTML = `<i class="fa-solid fa-bolt text-amber-500 animate-pulse"></i> 2-р алхам: Үндсэн хуудсанд орлоо! Бусад ${remainingPageIds.length} хуудас руу 5 секундын дараа түгээж байна...`;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Бусад хуудсуудад түгээж байна...`;
+
+                // 4.5 секунд түр хүлээнэ (Facebook видеог боловсруулж индекслэх хугацаа)
+                await new Promise(r => setTimeout(r, 4500));
+
+                let cpRes = await fetch('/api/crosspost-existing', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    video_id: uploadInfo.video_id,
+                    target_page_ids: remainingPageIds,
+                    message: caption,
+                    boost_preset: boostPreset,
+                    auto_create_rule: autoRule
+                  })
+                });
+                let cpData = await cpRes.json();
+
+                // Хэрэв Facebook кодчилж амжаагүйгээс алдаа заавал 5 секундын дараа дахин 1 удаа оролдоно
+                const pendingPages = (cpData.results || []).filter(r => !r.success);
+                if (pendingPages.length > 0) {
+                  progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> Facebook кодчилж дуусахыг хүлээж байна (Дахин оролдож байна)...`;
+                  await new Promise(r => setTimeout(r, 5000));
+                  const retryPageIds = pendingPages.map(r => r.page_id);
+                  const retryRes = await fetch('/api/crosspost-existing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      video_id: uploadInfo.video_id,
+                      target_page_ids: retryPageIds,
+                      message: caption,
+                      boost_preset: boostPreset,
+                      auto_create_rule: autoRule
+                    })
+                  });
+                  const retryData = await retryRes.json();
+                  if (retryData.results) {
+                    cpData.results = cpData.results.map(r => {
+                      const ret = retryData.results.find(x => x.page_id === r.page_id);
+                      return ret || r;
+                    });
+                  }
+                }
+
+                if (cpData.results) {
+                  allCombinedResults = [...allCombinedResults, ...cpData.results];
+                }
+              }
+
+              const finalSummaryData = {
+                status: 'ok',
+                published_count: allCombinedResults.filter(r => r.success).length,
+                total_targets: selectedPageIds.length,
+                first_post_url: primaryUrl,
+                results: allCombinedResults,
+                group_shares: primaryData.group_shares || [],
+                video_id: uploadInfo.video_id
+              };
+
               progressContainer.classList.add('hidden');
-              displayPublishResults(data, caption);
+              displayPublishResults(finalSummaryData, caption);
               loadPublishedPosts();
               btn.disabled = false;
               btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
@@ -1838,8 +1931,47 @@
             `}
           </div>
         `).join('');
+
+        if (data.results.some(r => !r.success)) {
+          linksContainer.innerHTML += `
+            <div class="mt-2.5 p-3 bg-indigo-50/90 border border-indigo-200 rounded-xl flex items-center justify-between gap-2">
+              <span class="text-xs text-indigo-900 font-semibold"><i class="fa-solid fa-bolt text-indigo-600 mr-1"></i> Зарим хуудас руу одоо 1 товшилтоор дахин түгээх:</span>
+              <button type="button" onclick="replicateFailedNow('${data.video_id || ""}', '${encodeURIComponent(caption)}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                <i class="fa-solid fa-arrows-rotate"></i> Бусад хуудсанд түгээх
+              </button>
+            </div>
+          `;
+        }
       }
 
+    async function replicateFailedNow(videoId, encodedCaption) {
+      if (!videoId) {
+        showToast('⚠️ Бичлэгийн ID олдсонгүй');
+        return;
+      }
+      const caption = decodeURIComponent(encodedCaption);
+      showToast('🔄 Бусад хуудсуудад түгээж байна...');
+      try {
+        const res = await fetch('/api/crosspost-existing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_id: videoId,
+            target_page_ids: ['all'],
+            message: caption,
+            boost_preset: 'standard',
+            auto_create_rule: true
+          })
+        });
+        const data = await res.json();
+        data.video_id = videoId;
+        displayPublishResults(data, caption);
+        loadPublishedPosts();
+        showToast(`✅ ${data.published_count} хуудсанд амжилттай түгээгдлээ!`);
+      } catch (e) {
+        alert('Түгээхэд алдаа гарлаа: ' + e.message);
+      }
+    }
       // Render Group Share Buttons
       const sharesContainer = document.getElementById('post-group-shares-container');
       if (sharesContainer && data.group_shares && data.group_shares.length > 0) {
@@ -1948,6 +2080,7 @@
         el.innerHTML = `<span class="text-[10px] text-rose-500">Алдаа: ${err.message}</span>`;
       }
     }
+
     let _currentCrosspostVidId = '';
     let _currentCrosspostMsg = '';
 

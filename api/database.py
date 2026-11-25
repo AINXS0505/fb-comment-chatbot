@@ -15,35 +15,34 @@ DEFAULT_PAGES = [
     {
         "page_id": "2159494444293875",
         "page_name": "Huree Kino www.huree.site",
-        "access_token": "EAAQEwsLb8KUBTFQShZAdofUliTe8f3pcYfEtBKZCZC60HwyRlHfEYpLEPLpHPnK0b8gghmmZAkPwSTgpSmIKlBN7joHYwOiIqqAaZCcy1TZA5IUtZBitv6xs2W0IwQ3pk6shPXIfs3boxKZBQB1LR1sCBkkZBdePF5BiPZA0dpBJ6i7iiFkI3PQ192zw7FCuDifUZBTn2jTfXqSLAD7WQUfC8rZAFX0ZA"
+        "access_token": "EAAQEwsLb8KUBTCCB15ZAHqfzHwUx470QUTZCgMloTVrKGuQQNPZBjuYwdw39VRiW0a912HSF2oXJ6TyewJ7Y2dVvIt4BwePRaE2aqCJuZA4kiWVbp7HV2ApxveB5nLZAvGMFqu5Irfc71kiSw9lCzcicx0EKZA5MLyigXhYZCrmSwZAHZATaIVbCAaaZBqvtMfglwW8Ww1RVZBBitNmoaGIh4KmX0uM"
     },
     {
         "page_id": "1495236273664035",
         "page_name": "Nice Drama Ai",
-        "access_token": "EAAQEwsLb8KUBTC6ZCZCVtgFZBDrTmlLl0XZBGu4xpZBG4Rfs9Suun7ilHuvIbUm451Jugq1THIYxlVQ4reb8z5nlcQ0VqRMp4l7hCidONSLs8ZBI6tNqFfZC0ktEeZCls13B6mCZBOyTGWKzOXmHRo0IeN2dVo0ao87udr0vgYjyaGdJAWrrlD4PbKTbRRWUGRzBe830ZBAF2e7Hm39nTydNa5S1eF"
+        "access_token": "EAAQEwsLb8KUBTPyr1nPxjzDNslpUhowLDvy2Xiz1APwSE4bs0YHhSRSZAfKlPDZCMzZBPZCxsSVyzmHoQkreprTPtzkBeHdCILc7yWfpvmIsJZBzJEsnuwa3m6xMC8I4lLkPKBXXWCfgQCUgRSm58PokhH6LBPxyHipbBmWOZB4eXlZCv4CIKGReM7sxZBslw3tqKtKttsK6ZAVHRNqAu76oQ"
     },
     {
         "page_id": "1352524827955013",
         "page_name": "WOW Mini Drama",
-        "access_token": "EAAQEwsLb8KUBTOuWyLPMhtcfkgc1gcsG5ngvgBvUbqPniYD0vQEWZArF5c5RXedx9DdmAoTmZCw7NQc5NTg04rtRpEcZBK9vJm7YgVjZB4bvSKXqvtYHd3HZAEBZC4cwX2nP5xvWZBvRMzv32pZBd5ZA6ABCvYuWrL6y2AbE1LzdBnBCdyCv1VR0Tw63jPsA8rRy9GXFtEP1ZBsdhyLw9K3QuUaESP"
+        "access_token": "EAAQEwsLb8KUBTALINux8qkkaIYl5ko8fxIOSTjbvg70jiDP3cQPlznB87jtd5G3n2RsiZBgXgMRanZChVfEhPRiSEJEGWX3CHplYyLF5Gf2wrDjqY7OPEkDFXZALWJuZBEvcgCBUUgSqEEpNNZAUHC3H45dR9wMPAqkAG2iao3ZBAlzxG3EJ7ZBRpidcTzprzTqZBUvgiCOM7ZBfFW2HNiRZBK"
     },
     {
         "page_id": "1508100029049981",
         "page_name": "Tenger Drama mongolia",
-        "access_token": "EAAQEwsLb8KUBTIVcZAbjQv2rZBPDoXSSM1B66KChDk1PRDl8F2oswYzWZAKxOvTZCcdHfqCocSiZBuaSaC2olQqBt6eAAVcCVZAd5RsY7QNpUoV3BafZCX5GKlWZBlEcZA6XIfdMZAj1jzGNMfzj3ieYkUIiFZCit4uI9KFhOUACqX0j7ZAwLEiVU4DyYMiYRgRj1fPZBH3D5wlMJh5f0PkKR5OGyifUX"
+        "access_token": "EAAQEwsLb8KUBTKbMXmXmzyAwfXLyg31iYLjMihxIa3XZBLnsP1SivBmG4ZBGJnqErni0NOMyE8b7uNYx4bGmydJB8km4dEShqoU9HGHV8HVbKy6DNCnZA4skMZB9KSZAwXFKY0T4ma1EkCw76JknCciqInFGdb4nxMZCSM90n4IM18Rn0tzAexllO2ZAVZAXkaIH1PU4IZCYHG3MpWtwmMV9w"
     },
     {
         "page_id": "1391701170699267",
         "page_name": "Lolo Drama",
-        "access_token": "EAAQEwsLb8KUBTDneCbK3pjTHVzWZAvOC3ECPZC2HVhiLpO1HTV3yFE3n63evHpHGt6EYK4cHUaV4YQIZB2tSt9gCTuUwVKMPorRW3xFvaE7ZCKtyDv3olSPRsBvVlUTepccqMp3gsBseXIwHZAnd7s9fINepW7XJ4Kh314kLFyiN1zBrlCHpY8X8OeZApTrhVnNiQH2ZB4ZCAlwqx66unqGBgQ1t"
+        "access_token": "EAAQEwsLb8KUBTNUJkALe58DSyKd7IvT41q8pUZB4pssAd7CSqdXDe9ZAKK7OeSfyQ9HjBI4ZAR8RfcCBtk0qWVJZAiDPHZAluBiktTRsoVJwxkKfDiIxvdB237BmyFhsr5g1tv3ZChCZAxKpW7F4FSxZBWAJHhHy4ZAtsSp4GSvtpl7MpFncFt461DEgqP1nIlP72PWLulSux5hlWHQidz0gJ"
     },
     {
         "page_id": "121180834405750",
         "page_name": "Dornod Ai",
-        "access_token": "EAAQEwsLb8KUBTJw5oDwBR7qSTCRrfvIaFTUjZAxqhiU1qIgE7jGngZAoGYDPqZCk729nQxCbdwVzNUEeTO2UYPR9WXhiYWKsWEzZAENqR0VLIX02xseLN9I7oYgBrLXtpPZB836DTrXS0ni2yh5zo2ln3Xu5FmzJHaB1cAVGAztqZCcHZB85kHDmxAdsxOOrIVu24wxFVKRjWJWRsMnOAkZD"
+        "access_token": "EAAQEwsLb8KUBTONNvyW0TDyqyUbXTPk2VWi0DAgKVF6T1JVcZCG8nPASOOJEVo9cxUrRMG04KPpQcLfvFWoxnZCILJitRjNy3FfzJ40K1zzFZBfRt6ZBOqsw9xesOzjoyV2hv7oSp9l9ojXgxJr6XCuC6EGzX3563oaE6F4BTxftQUruEsKkZCnAzZCRu5aLqs7YAl3AHZCdjZC8k6pFM3MQZCp4ZD"
     }
 ]
-
 HUREE_PROMO_TEXT = (
     "Сайн байна уу! 🎬🍿\n\n"
     "https://www.huree.site энэ сайтаар ороод бүртгүүлээд Монгол хэлтэй чанартай бичлэгтэй 1000+ кино Хүрээ дээр бий!\n\n"

@@ -204,6 +204,10 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 if not comment_id:
                     continue
 
+                # Хуудасны өөрийн комментод хариулж loop үүсгэхээс сэргийлэх
+                if sender_id == page_id:
+                    continue
+
                 # Ботын өөрийн хариулсан комментод давхар хариулж loop үүсгэхээс сэргийлэх
                 if "huree.site" in comment_text.lower() or "чатаар тань илгээлээ" in comment_text:
                     print(f"[Skip self bot reply]: {comment_id}")
@@ -299,7 +303,6 @@ async def save_rule(rule: PostRuleSchema):
     rule_id = database.save_post_rule(rule.dict())
     return {"status": "ok", "rule_id": rule_id}
 
-
 @app.delete("/api/rules/{rule_id}")
 @app.delete("/rules/{rule_id}")
 async def delete_rule(rule_id: int):
@@ -373,18 +376,27 @@ async def sync_recent_comments(limit: int = 1):
             page_name = p["page_name"]
 
             try:
-                # 1. Сүүлийн постыг авах (Хугацаа хэмнэх үүднээс limit=1)
+                # 1. Сүүлийн нийтлэгдсэн постууд болон видео/reels-г зэрэг авах
+                all_target_nodes = []
                 posts_res = await client.get(
-                    f"https://graph.facebook.com/v19.0/{page_id}/posts",
+                    f"https://graph.facebook.com/v21.0/{page_id}/posts",
                     params={"limit": limit, "access_token": page_token}
                 )
-                posts = posts_res.json().get("data", [])
+                if posts_res.status_code == 200:
+                    all_target_nodes.extend(posts_res.json().get("data", []))
 
-                for post in posts:
+                vids_res = await client.get(
+                    f"https://graph.facebook.com/v21.0/{page_id}/videos",
+                    params={"limit": limit, "access_token": page_token}
+                )
+                if vids_res.status_code == 200:
+                    all_target_nodes.extend(vids_res.json().get("data", []))
+
+                for post in all_target_nodes:
                     post_id = post["id"]
                     # 2. Тухайн постын сүүлийн 5 комментыг авах
                     comm_res = await client.get(
-                        f"https://graph.facebook.com/v19.0/{post_id}/comments",
+                        f"https://graph.facebook.com/v21.0/{post_id}/comments",
                         params={"limit": 5, "access_token": page_token}
                     )
                     comments = comm_res.json().get("data", [])
@@ -396,8 +408,8 @@ async def sync_recent_comments(limit: int = 1):
                         sid = str(sender.get("id") or "")
                         sname = sender.get("name", "Үйлчлүүлэгч")
 
-                        # Өөрийн хуудасны хариуг алгасах
-                        if "huree.site" in msg.lower() or "чатаар тань илгээлээ" in msg:
+                        # Өөрийн хуудасны коммент болон өөрийн хариуг алгасах
+                        if sid == page_id or "huree.site" in msg.lower() or "чатаар тань илгээлээ" in msg:
                             continue
 
                         # Хэрэв өмнө нь боловсруулагдаагүй бол шууд хариулах
@@ -603,7 +615,6 @@ async def publish_multi_pages(payload: MultiPublishRequest):
                     "use_ai": 1,
                     "is_active": 1
                 })
-
 
             results.append({
                 "success": True,

@@ -1617,26 +1617,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ movie_title: movieTitle, genre: genre })
         });
-      generateAICaption();
-    }
-
-    async function generateAICaption() {
-      const movieTitle = document.getElementById('ai-movie-title').value.trim();
-      const genre = (document.getElementById('ai-selected-genre') && document.getElementById('ai-selected-genre').value) || 'Драма';
-      if (!movieTitle) {
-        alert('Киноны нэрийг оруулна уу');
-        return;
-      }
-      const btn = document.getElementById('btn-generate-caption');
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI бичиж байна...`;
-
-      try {
-        const res = await fetch('/api/ai-craft-caption', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ movie_title: movieTitle, genre: genre })
-        });
         const data = await res.json();
         const mainText = data.caption || data.short_caption;
         document.getElementById('pub-caption').value = mainText;

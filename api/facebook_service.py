@@ -4,7 +4,7 @@ import urllib.parse
 import httpx
 from typing import Dict, Any, Optional, List
 
-GRAPH_API_VERSION = "v19.0"
+GRAPH_API_VERSION = "v21.0"
 GRAPH_API_URL = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
 
 def verify_signature(raw_body: bytes, signature_header: str, app_secret: str) -> bool:
@@ -63,14 +63,14 @@ async def send_private_messenger_reply(comment_id: str, message: str, access_tok
 
     url = f"{GRAPH_API_URL}/me/messages"
     params = {"access_token": access_token}
-    data = {
-        "recipient[comment_id]": comment_id,
-        "message[text]": message
+    payload = {
+        "recipient": {"comment_id": comment_id},
+        "message": {"text": message}
     }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, params=params, data=data)
+            resp = await client.post(url, params=params, json=payload)
             res_data = resp.json()
             print(f"[Private Reply] Status: {resp.status_code}, CommentID: {comment_id}, Response: {res_data}")
             return res_data
@@ -89,14 +89,14 @@ async def send_direct_chat_reply(recipient_id: str, message: str, access_token: 
 
     url = f"{GRAPH_API_URL}/me/messages"
     params = {"access_token": access_token}
-    data = {
-        "recipient[id]": recipient_id,
-        "message[text]": message
+    payload = {
+        "recipient": {"id": recipient_id},
+        "message": {"text": message}
     }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, params=params, data=data)
+            resp = await client.post(url, params=params, json=payload)
             res_data = resp.json()
             print(f"[Direct Chat Reply] Status: {resp.status_code}, Recipient: {recipient_id}, Response: {res_data}")
             return res_data
@@ -122,7 +122,6 @@ async def publish_post_to_page(
     """
     if not access_token:
         return {"success": False, "error": f"Page {page_id} access token missing"}
-
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             if media_type == "image" and media_url:

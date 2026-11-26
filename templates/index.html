@@ -102,6 +102,30 @@
         
         <!-- Left 2 Cols: Composer Form -->
         <div class="lg:col-span-2 space-y-6">
+
+          <!-- Quick Video ID Loader Bar -->
+          <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5 rounded-2xl text-white shadow-md border border-indigo-900/50 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600/50 flex items-center justify-center text-indigo-300 font-bold text-sm shrink-0">
+                  <i class="fa-solid fa-clapperboard"></i>
+                </div>
+                <div>
+                  <h3 class="text-xs sm:text-sm font-bold text-white">Бэлэн эсвэл өмнө нийтэлсэн Видеоны ID-аар хуудсуудад түгээх</h3>
+                  <p class="text-[11px] text-indigo-200">Видео дахин татаж хуулахгүйгээр Facebook дээрх ID-аар хуудас бүрийн товчлуурыг нээх</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2.5">
+              <div class="relative flex-1">
+                <input type="text" id="manual-crosspost-vid-id" placeholder="Facebook Video ID эсвэл Reel линк (жишээ: 1496091535774557)" class="w-full bg-slate-800/90 text-white placeholder-slate-400 text-xs rounded-xl px-3.5 py-2.5 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+              </div>
+              <button type="button" onclick="openPerPageBoardFromManualInput()" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap">
+                <i class="fa-solid fa-table-cells-large"></i> Хуудас бүрийн товчлуурыг нээх
+              </button>
+            </div>
+          </div>
+
           <form id="form-multi-publish" onsubmit="publishMultiPages(event)" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
             
             <!-- Step 1: Target Page Selector -->
@@ -343,6 +367,57 @@
             </button>
           </form>
 
+          <!-- Per-Page Dedicated Publisher Board -->
+          <div id="per-page-publisher-board" class="hidden bg-white p-5 sm:p-6 rounded-2xl border-2 border-indigo-200 shadow-xl space-y-5">
+            <!-- Header with Video info, Ready status, and Global action -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-100 text-indigo-800 uppercase tracking-wide">
+                    <i class="fa-solid fa-clapperboard mr-1"></i> Видео нийтлэх самбар
+                  </span>
+                  <span id="board-video-status-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Facebook шалгаж байна...
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 pt-1 flex-wrap">
+                  <span class="text-xs text-slate-500 font-medium">Видео ID:</span>
+                  <code id="board-video-id-display" class="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200">--</code>
+                  <button type="button" onclick="copyBoardVideoId()" class="text-slate-400 hover:text-indigo-600 text-xs transition" title="Хуулах">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                  <button type="button" onclick="checkBoardVideoStatus(true)" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold ml-1 flex items-center gap-1">
+                    <i class="fa-solid fa-rotate text-[10px]"></i> Дахин шалгах
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sequential All-Pages Dispatcher Button -->
+              <div class="flex items-center gap-2">
+                <button type="button" id="btn-publish-all-remaining" onclick="publishAllRemainingPagesSequentially()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-xs transition shadow-md shadow-emerald-100 flex items-center gap-2 whitespace-nowrap">
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>Үлдсэн бүх хуудсанд зэрэг түгээх</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Page Cards Grid (6 pages) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5" id="per-page-cards-grid">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Caption Preview & Edit box -->
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <i class="fa-regular fa-message text-indigo-600"></i> Нийтлэх тайлбар текст (Caption):
+                </span>
+                <span class="text-[11px] text-slate-400">Хуудас бүрт энэ тайлбартайгаар нийтлэгдэнэ</span>
+              </div>
+              <textarea id="board-caption-input" rows="2" class="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Тайлбар текст..."></textarea>
+            </div>
+          </div>
+
           <!-- Publish Results Card (Dynamic) -->
           <div id="publish-result-card" class="hidden bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-emerald-100">
@@ -398,6 +473,7 @@
                   <span class="text-[10px] text-slate-400">Дөнгөж сая · 🌐 Нийтэд нээлттэй</span>
                 </div>
               </div>
+
               <!-- Caption -->
               <div class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto" id="preview-caption">
                 Постын тайлбар энд харагдана...
@@ -1272,6 +1348,7 @@
         currentUploadXhr = null;
       }
     }
+    }
 
     // Upload file to tmpfiles with live progress, speed tracking & stall detection
     function uploadFileToTmpFiles(file, onProgress) {
@@ -1707,7 +1784,7 @@
               });
 
               // Алхам 1: Үндсэн хуудсанд (Huree Kino) эхлээд бүрэн нийтэлж баталгаажуулна
-              progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> 1-р алхам: Үндсэн хуудас (Huree Kino) дээр нийтэлж байна...`;
+              progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> Үндсэн хуудас (Huree Kino) дээр нийтэлж байна...`;
               btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Үндсэн хуудсанд нийтэлж байна...`;
 
               const finishRes = await fetch('/api/video-upload/finish-and-replicate', {
@@ -1727,82 +1804,20 @@
               const primaryData = await finishRes.json();
               const primaryUrl = primaryData.first_post_url || (primaryData.results && primaryData.results[0] ? primaryData.results[0].post_url : `https://www.facebook.com/reel/${uploadInfo.video_id}/`);
 
-              // Алхам 2: Бусад 5 хуудас сонгогдсон бол Facebook бичлэгийг боловсруулахыг түр хүлээж байгаад түгээнэ
-              const remainingPageIds = selectedPageIds.filter(id => id !== uploadInfo.page_id);
-              let allCombinedResults = primaryData.results || [{
+              progressContainer.classList.add('hidden');
+              btn.disabled = false;
+              btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+
+              showToast('🎬 Үндсэн хуудас дээр видео амжилттай нийтлэгдлээ! Одоо бусад хуудас бүрийн товчлуурыг даран нийтэлнэ үү.');
+              loadPublishedPosts();
+
+              // Хуудас бүрийн тусдаа товчлууртай самбарыг нээх
+              renderPerPagePublisherBoard(uploadInfo.video_id, caption, {
                 success: true,
                 page_id: uploadInfo.page_id,
                 page_name: "Huree Kino www.huree.site",
-                post_id: uploadInfo.video_id,
                 post_url: primaryUrl
-              }];
-
-              if (remainingPageIds.length > 0) {
-                progressStatus.innerHTML = `<i class="fa-solid fa-bolt text-amber-500 animate-pulse"></i> 2-р алхам: Үндсэн хуудсанд орлоо! Бусад ${remainingPageIds.length} хуудас руу 5 секундын дараа түгээж байна...`;
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Бусад хуудсуудад түгээж байна...`;
-
-                // 4.5 секунд түр хүлээнэ (Facebook видеог боловсруулж индекслэх хугацаа)
-                await new Promise(r => setTimeout(r, 4500));
-
-                let cpRes = await fetch('/api/crosspost-existing', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    video_id: uploadInfo.video_id,
-                    target_page_ids: remainingPageIds,
-                    message: caption,
-                    boost_preset: boostPreset,
-                    auto_create_rule: autoRule
-                  })
-                });
-                let cpData = await cpRes.json();
-
-                // Хэрэв Facebook кодчилж амжаагүйгээс алдаа заавал 5 секундын дараа дахин 1 удаа оролдоно
-                const pendingPages = (cpData.results || []).filter(r => !r.success);
-                if (pendingPages.length > 0) {
-                  progressStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600"></i> Facebook кодчилж дуусахыг хүлээж байна (Дахин оролдож байна)...`;
-                  await new Promise(r => setTimeout(r, 5000));
-                  const retryPageIds = pendingPages.map(r => r.page_id);
-                  const retryRes = await fetch('/api/crosspost-existing', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      video_id: uploadInfo.video_id,
-                      target_page_ids: retryPageIds,
-                      message: caption,
-                      boost_preset: boostPreset,
-                      auto_create_rule: autoRule
-                    })
-                  });
-                  const retryData = await retryRes.json();
-                  if (retryData.results) {
-                    cpData.results = cpData.results.map(r => {
-                      const ret = retryData.results.find(x => x.page_id === r.page_id);
-                      return ret || r;
-                    });
-                  }
-                }
-
-                if (cpData.results) {
-                  allCombinedResults = [...allCombinedResults, ...cpData.results];
-                }
-              }
-
-              const finalSummaryData = {
-                status: 'ok',
-                published_count: allCombinedResults.filter(r => r.success).length,
-                total_targets: selectedPageIds.length,
-                first_post_url: primaryUrl,
-                results: allCombinedResults,
-                group_shares: primaryData.group_shares || [],
-                video_id: uploadInfo.video_id
-              };
-
-              progressContainer.classList.add('hidden');
-              displayPublishResults(finalSummaryData, caption);
-              loadPublishedPosts();
-              btn.disabled = false;
-              btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> Сонгосон бүх хуудсанд зэрэг нийтлэх`;
+              });
               return;
             } catch (uploadErr) {
               progressContainer.classList.add('hidden');
@@ -1924,6 +1939,23 @@
         }
       }
 
+      // Render Group Share Buttons
+      const sharesContainer = document.getElementById('post-group-shares-container');
+      if (sharesContainer && data.group_shares && data.group_shares.length > 0) {
+        sharesContainer.innerHTML = data.group_shares.map(g => `
+          <button type="button" onclick="shareToFacebookGroup('${g.group_url}', '${encodeURIComponent(data.first_post_url)}', '${encodeURIComponent(caption)}')" class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between group transition">
+            <div class="truncate">
+              <span class="block text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">${g.name}</span>
+              <span class="block text-[10px] text-slate-400">${g.category}</span>
+            </div>
+            <span class="px-2 py-1 bg-blue-100 group-hover:bg-blue-600 group-hover:text-white text-blue-700 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
+              <i class="fa-solid fa-share mr-1"></i> Түгээх
+            </span>
+          </button>
+        `).join('');
+      }
+    }
+
     async function replicateFailedNow(videoId, encodedCaption) {
       if (!videoId) {
         showToast('⚠️ Бичлэгийн ID олдсонгүй');
@@ -1952,22 +1984,6 @@
         alert('Түгээхэд алдаа гарлаа: ' + e.message);
       }
     }
-      // Render Group Share Buttons
-      const sharesContainer = document.getElementById('post-group-shares-container');
-      if (sharesContainer && data.group_shares && data.group_shares.length > 0) {
-        sharesContainer.innerHTML = data.group_shares.map(g => `
-          <button type="button" onclick="shareToFacebookGroup('${g.group_url}', '${encodeURIComponent(data.first_post_url)}', '${encodeURIComponent(caption)}')" class="p-2.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left flex items-center justify-between group transition">
-            <div class="truncate">
-              <span class="block text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">${g.name}</span>
-              <span class="block text-[10px] text-slate-400">${g.category}</span>
-            </div>
-            <span class="px-2 py-1 bg-blue-100 group-hover:bg-blue-600 group-hover:text-white text-blue-700 text-[10px] font-bold rounded-lg transition whitespace-nowrap">
-              <i class="fa-solid fa-share mr-1"></i> Түгээх
-            </span>
-          </button>
-        `).join('');
-      }
-    }
 
     function shareToFacebookGroup(groupUrl, encodedPostUrl, encodedCaption) {
       const postUrl = decodeURIComponent(encodedPostUrl);
@@ -1979,6 +1995,269 @@
 
       // Open group in new tab
       window.open(groupUrl, '_blank');
+    }
+
+    // =========================================================================
+    // --- Per-Page Dedicated Publisher Board State & Functions ---
+    // =========================================================================
+    let activeBoardVideoId = null;
+    let boardPagesState = {};
+
+    const KNOWN_PAGES_META = [
+      { id: '2159494444293875', name: 'Huree Kino www.huree.site', isPrimary: true },
+      { id: '1495236273664035', name: 'Nice Drama Ai', isPrimary: false },
+      { id: '1352524827955013', name: 'WOW Mini Drama', isPrimary: false },
+      { id: '1508100029049981', name: 'Tenger Drama mongolia', isPrimary: false },
+      { id: '1391701170699267', name: 'Lolo Drama', isPrimary: false },
+      { id: '121180834405750',  name: 'Dornod Ai', isPrimary: false }
+    ];
+
+    function openPerPageBoardFromManualInput() {
+      const input = document.getElementById('manual-crosspost-vid-id');
+      let raw = (input ? input.value : '').trim();
+      if (!raw) {
+        alert('Бичлэгийн ID эсвэл Facebook Reel линкийг оруулна уу!');
+        return;
+      }
+      let vidId = raw;
+      if (raw.includes('/reel/')) {
+        const parts = raw.split('/reel/');
+        if (parts[1]) vidId = parts[1].split('/')[0].split('?')[0];
+      } else if (raw.includes('v=')) {
+        try {
+          vidId = new URL(raw).searchParams.get('v') || raw;
+        } catch(e) {}
+      }
+      vidId = vidId.split('_').pop().replace(/[^0-9]/g, '');
+      if (!vidId) {
+        alert('Хүчинтэй тоон видео ID олдсонгүй!');
+        return;
+      }
+
+      const caption = (document.getElementById('pub-caption') ? document.getElementById('pub-caption').value : '').trim() ||
+        "🎬✨ ШИНЭ КИНО: Үзэх холбоос: https://www.huree.site (1 кино 3,900₮ | Бүх кино 15,900₮ QPay)";
+
+      renderPerPagePublisherBoard(vidId, caption, null);
+    }
+
+    function renderPerPagePublisherBoard(videoId, caption, primaryResult) {
+      activeBoardVideoId = videoId;
+      const board = document.getElementById('per-page-publisher-board');
+      if (!board) return;
+      board.classList.remove('hidden');
+
+      const vidDisp = document.getElementById('board-video-id-display');
+      if (vidDisp) vidDisp.innerText = videoId;
+      const captionInput = document.getElementById('board-caption-input');
+      if (captionInput) captionInput.value = caption || '';
+
+      // Initialize page states
+      boardPagesState = {};
+      KNOWN_PAGES_META.forEach(p => {
+        if (primaryResult && primaryResult.success && String(p.id) === String(primaryResult.page_id)) {
+          boardPagesState[p.id] = {
+            name: p.name,
+            status: 'success',
+            postUrl: primaryResult.post_url,
+            error: null
+          };
+        } else {
+          boardPagesState[p.id] = {
+            name: p.name,
+            status: 'idle',
+            postUrl: null,
+            error: null
+          };
+        }
+      });
+
+      renderBoardCards();
+      checkBoardVideoStatus(false);
+
+      // Smooth scroll into view
+      setTimeout(() => {
+        board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    function renderBoardCards() {
+      const container = document.getElementById('per-page-cards-grid');
+      if (!container) return;
+
+      container.innerHTML = KNOWN_PAGES_META.map(p => {
+        const st = boardPagesState[p.id] || { status: 'idle' };
+        let statusBadge = '';
+        let actionBtn = '';
+
+        if (st.status === 'success') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1"><i class="fa-solid fa-check"></i> Нийтлэгдсэн</span>`;
+          actionBtn = `<a href="${st.postUrl || `https://www.facebook.com/reel/${activeBoardVideoId}/`}" target="_blank" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap"><span>Facebook үзэх</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>`;
+        } else if (st.status === 'uploading') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> Нийтэлж байна...</span>`;
+          actionBtn = `<button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> Хүлээгээрэй...</button>`;
+        } else if (st.status === 'transcoding') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1"><i class="fa-solid fa-clock"></i> Кодчилж байна</span>`;
+          actionBtn = `<button type="button" onclick="publishToSpecificPage('${p.id}')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> Дахин нийтлэх</button>`;
+        } else if (st.status === 'error') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> Алдаа</span>`;
+          actionBtn = `<button type="button" onclick="publishToSpecificPage('${p.id}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> Дахин оролдох</button>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">Хүлээгдэж буй</span>`;
+          actionBtn = `<button type="button" onclick="publishToSpecificPage('${p.id}')" class="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap flex items-center gap-1"><i class="fa-solid fa-paper-plane text-[10px]"></i> Энэ хуудсанд нийтлэх</button>`;
+        }
+
+        return `
+          <div class="p-4 rounded-xl border ${st.status === 'success' ? 'bg-emerald-50/40 border-emerald-200' : (st.status === 'error' ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50 border-slate-200')} transition space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center space-x-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-full ${p.isPrimary ? 'bg-indigo-600' : 'bg-slate-700'} text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  <i class="fa-brands fa-facebook-f"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-800 truncate">${p.name}</span>
+                    ${p.isPrimary ? `<span class="px-1.5 py-0.2 bg-indigo-100 text-indigo-800 text-[9px] font-bold rounded">Үндсэн</span>` : ''}
+                  </div>
+                  <span class="text-[10px] text-slate-400 font-mono">ID: ${p.id}</span>
+                </div>
+              </div>
+              ${statusBadge}
+            </div>
+
+            ${st.error ? `<div class="p-2 bg-rose-100/70 border border-rose-200 rounded-lg text-[11px] text-rose-800">${st.error}</div>` : ''}
+
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[11px] text-slate-500">${st.status === 'success' ? 'Пост шууд үзэх:' : 'Товшиж нийтлэх:'}</span>
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function checkBoardVideoStatus(isManual = false) {
+      if (!activeBoardVideoId) return;
+      const badge = document.getElementById('board-video-status-badge');
+      if (badge && isManual) {
+        badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 flex items-center gap-1';
+        badge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Facebook шалгаж байна...`;
+      }
+      try {
+        const res = await fetch(`/api/video-status/${activeBoardVideoId}`);
+        const data = await res.json();
+        if (badge) {
+          if (data.is_ready) {
+            badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1';
+            badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Facebook дээр бэлэн (Ready)`;
+          } else {
+            badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1';
+            badge.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Facebook кодчилж байна (${data.video_status || 'processing'})`;
+          }
+        }
+        if (isManual) {
+          showToast(data.is_ready ? '🟢 Видео Facebook дээр бэлэн байна!' : '⏳ Видео кодчилогдож байна, хэдэн секунд хүлээнэ үү.');
+        }
+      } catch (e) {
+        if (badge) {
+          badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 flex items-center gap-1';
+          badge.innerHTML = `Шалгалт дууссан`;
+        }
+      }
+    }
+
+    async function publishToSpecificPage(pageId) {
+      if (!activeBoardVideoId) {
+        alert('Бичлэгийн ID тодорхойгүй байна!');
+        return;
+      }
+      const caption = (document.getElementById('board-caption-input') ? document.getElementById('board-caption-input').value : '').trim() ||
+        (document.getElementById('pub-caption') ? document.getElementById('pub-caption').value : '').trim();
+
+      boardPagesState[pageId] = boardPagesState[pageId] || {};
+      boardPagesState[pageId].status = 'uploading';
+      boardPagesState[pageId].error = null;
+      renderBoardCards();
+
+      try {
+        const res = await fetch('/api/crosspost-existing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_id: activeBoardVideoId,
+            target_page_ids: [pageId],
+            message: caption,
+            boost_preset: 'standard',
+            auto_create_rule: true
+          })
+        });
+        const data = await res.json();
+        const result = (data.results || [])[0];
+
+        if (result && result.success) {
+          boardPagesState[pageId].status = 'success';
+          boardPagesState[pageId].postUrl = result.post_url;
+          boardPagesState[pageId].error = null;
+          showToast(`✅ ${result.page_name} дээр амжилттай нийтлэгдлээ!`);
+          loadPublishedPosts();
+        } else {
+          const err = (result && result.error) ? result.error : 'Нийтлэхэд алдаа гарлаа';
+          if (err.includes('боловсруулж байна') || err.includes('reuse video') || err.includes('processing')) {
+            boardPagesState[pageId].status = 'transcoding';
+            boardPagesState[pageId].error = '⏳ Facebook видеог боловсруулж байна. Түр хүлээгээд "Дахин нийтлэх" дарна уу.';
+          } else {
+            boardPagesState[pageId].status = 'error';
+            boardPagesState[pageId].error = err;
+          }
+        }
+      } catch (err) {
+        boardPagesState[pageId].status = 'error';
+        boardPagesState[pageId].error = err.message;
+      }
+      renderBoardCards();
+    }
+
+    async function publishAllRemainingPagesSequentially() {
+      if (!activeBoardVideoId) {
+        alert('Бичлэгийн ID тодорхойгүй байна!');
+        return;
+      }
+      const remaining = KNOWN_PAGES_META.filter(p => {
+        const st = boardPagesState[p.id];
+        return !st || st.status !== 'success';
+      });
+
+      if (remaining.length === 0) {
+        showToast('Бүх 6 хуудсанд аль хэдийн нийтлэгдсэн байна!');
+        return;
+      }
+
+      const btn = document.getElementById('btn-publish-all-remaining');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Хуудсуудад дарааллуулан түгээж байна...`;
+      }
+
+      showToast(`⚡ Үлдсэн ${remaining.length} хуудсанд дарааллуулан нийтэлж байна...`);
+
+      for (let i = 0; i < remaining.length; i++) {
+        const p = remaining[i];
+        await publishToSpecificPage(p.id);
+        // 2-second polite delay between pages
+        if (i < remaining.length - 1) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-bolt mr-1.5"></i> Үлдсэн бүх хуудсанд зэрэг түгээх`;
+      }
+    }
+
+    function copyBoardVideoId() {
+      if (!activeBoardVideoId) return;
+      navigator.clipboard.writeText(activeBoardVideoId);
+      showToast(`📋 Видео ID хуулагдлаа: ${activeBoardVideoId}`);
     }
 
     async function loadPublishedPosts() {

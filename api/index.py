@@ -70,8 +70,11 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            with open(p, "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return HTMLResponse(content=f.read())
+            except Exception:
+                pass
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
@@ -197,7 +200,6 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
             # Зөвхөн коммент мөн эсэхийг шалгах (item == comment эсвэл comment_id байгаа эсэх)
             is_comment = (val.get("item") == "comment") or ("comment_id" in val)
             verb = val.get("verb", "add")
-
             if is_comment and verb in ["add", "edited", None]:
                 comment_id = str(val.get("comment_id") or val.get("id") or "")
                 post_id = str(val.get("post_id") or "default_all")
@@ -578,10 +580,10 @@ async def publish_multi_pages(payload: MultiPublishRequest):
     results = []
     first_post_url = ""
 
-    for page_item in target_pages:
-        pid = str(page_item["page_id"])
-        pname = page_item["page_name"]
-        token = page_item["access_token"]
+    for page in target_pages:
+        pid = str(page["page_id"])
+        pname = page["page_name"]
+        token = page["access_token"]
 
         pub_res = await facebook_service.publish_post_to_page(
             page_id=pid,
@@ -598,7 +600,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
             if not first_post_url:
                 first_post_url = post_url
 
-            # Record into published_posts database
+
             database.save_published_post(
                 page_id=pid,
                 page_name=pname,
@@ -675,7 +677,7 @@ async def start_video_upload_endpoint(payload: VideoUploadStartRequest):
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            f"https://graph.facebook.com/v21.0/{pid}/videos",
+            f"https://graph-video.facebook.com/v21.0/{pid}/videos",
             data={
                 "upload_phase": "start",
                 "file_size": payload.file_size,
@@ -733,10 +735,10 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
     elif payload.boost_preset == "qpay_fast":
         final_message += "\n\n⚡ QPay-ээр шууд төлөөд 1 кино 3,900₮, бүх кино 15,900₮-өөр үзээрэй: https://www.huree.site"
 
-    # Finish upload on primary page
+    # Finish upload on primary page via graph-video endpoint
     async with httpx.AsyncClient(timeout=30.0) as client:
         await client.post(
-            f"https://graph.facebook.com/v21.0/{pid}/videos",
+            f"https://graph-video.facebook.com/v21.0/{pid}/videos",
             data={
                 "upload_phase": "finish",
                 "upload_session_id": payload.upload_session_id,
@@ -799,6 +801,7 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
             )
     except Exception as allow_err:
         print(f"[Allow Crossposting Warning]: {allow_err}")
+
     # Replicate instantly across all selected pages using Facebook Native Crossposting API (<1s per page, handles 500MB+)
     async with httpx.AsyncClient(timeout=30.0) as client:
         for p in remaining_pages:
@@ -811,7 +814,7 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
 
             try:
                 cp_res = await client.post(
-                    f"https://graph.facebook.com/v21.0/{r_pid}/videos",
+                    f"https://graph-video.facebook.com/v21.0/{r_pid}/videos",
                     data={
                         "crossposted_video_id": payload.video_id,
                         "description": final_message,
@@ -993,7 +996,7 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
 
             try:
                 cp_res = await client.post(
-                    f"https://graph.facebook.com/v21.0/{r_pid}/videos",
+                    f"https://graph-video.facebook.com/v21.0/{r_pid}/videos",
                     data={
                         "crossposted_video_id": clean_vid_id,
                         "description": msg,

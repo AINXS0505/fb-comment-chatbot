@@ -135,12 +135,32 @@
                   <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">1</span>
                   Нийтлэх хуудсуудаа сонгох
                 </label>
-                <button type="button" onclick="toggleSelectAllPages()" id="btn-toggle-all-pages" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition">
-                  Бүгдийг сонгох
-                </button>
+                <div class="flex items-center gap-2">
+                  <span id="selected-pages-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">6 сонгогдсон</span>
+                  <button type="button" onclick="toggleSelectAllPages()" id="btn-toggle-all-pages" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition">
+                    Бүгдийг сонгох
+                  </button>
+                </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="publisher-pages-selector">
                 <!-- Loaded via JS -->
+              </div>
+
+              <!-- Quick Publish Action Bar right below Step 1 -->
+              <div class="mt-4 p-4 bg-gradient-to-r from-indigo-50/90 via-blue-50/90 to-purple-50/90 rounded-xl border border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center space-x-2.5 text-xs text-indigo-950">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </div>
+                  <div>
+                    <span class="block font-bold text-slate-800" id="quick-publish-title">Сонгосон хуудсанд нийтлэх</span>
+                    <span class="block text-[11px] text-slate-500" id="quick-publish-hint">Шалгасан 6 хуудас дээр зэрэг нийтлэхэд бэлэн</span>
+                  </div>
+                </div>
+                <button type="button" onclick="document.getElementById('form-multi-publish').requestSubmit()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl text-xs transition shadow-md shadow-indigo-100 flex items-center justify-center gap-2 whitespace-nowrap">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span id="quick-btn-publish-label">Сонгосон хуудсанд нийтлэх</span>
+                </button>
               </div>
             </div>
 
@@ -368,7 +388,7 @@
           </form>
 
           <!-- Per-Page Dedicated Publisher Board -->
-          <div id="per-page-publisher-board" class="hidden bg-white p-5 sm:p-6 rounded-2xl border-2 border-indigo-200 shadow-xl space-y-5">
+          <div id="per-page-publisher-board" class="bg-white p-5 sm:p-6 rounded-2xl border-2 border-indigo-200 shadow-xl space-y-5">
             <!-- Header with Video info, Ready status, and Global action -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
               <div class="space-y-1">
@@ -427,7 +447,6 @@
               </div>
               <span id="publish-result-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"></span>
             </div>
-
             <!-- Page Post Links -->
             <div class="space-y-2" id="publish-result-links">
               <!-- Rendered via JS -->
@@ -877,7 +896,6 @@
     </div>
 
   </main>
-
   <!-- Modal for Creating/Editing Post Rule -->
   <div id="rule-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
@@ -1330,7 +1348,6 @@
       updateMediaPreview();
       showToast(`📁 Файл сонгогдлоо: ${file.name}`);
     }
-
     function clearSelectedFile(e) {
       if (e) e.stopPropagation();
       selectedMediaFile = null;
@@ -1348,7 +1365,7 @@
         currentUploadXhr = null;
       }
     }
-    
+
     // Upload file to tmpfiles with live progress, speed tracking & stall detection
     function uploadFileToTmpFiles(file, onProgress) {
       return new Promise((resolve, reject) => {
@@ -1551,16 +1568,72 @@
         const container = document.getElementById('publisher-pages-selector');
         if (!container) return;
         container.innerHTML = publisherPages.map((p) => `
-          <label class="cursor-pointer p-3 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50/50 flex items-center space-x-3 transition">
-            <input type="checkbox" name="pub_pages" value="${p.page_id}" checked class="page-checkbox w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-            <div class="truncate">
-              <span class="block text-xs font-bold text-slate-800 truncate" title="${p.page_name}">${p.page_name}</span>
-              <span class="block text-[10px] text-slate-400 font-mono truncate">ID: ${p.page_id}</span>
-            </div>
-          </label>
+          <div class="p-3 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50/50 flex flex-col justify-between transition space-y-2">
+            <label class="cursor-pointer flex items-center space-x-2.5">
+              <input type="checkbox" name="pub_pages" value="${p.page_id}" checked onchange="updateSelectedPagesCount()" class="page-checkbox w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <div class="truncate">
+                <span class="block text-xs font-bold text-slate-800 truncate" title="${p.page_name}">${p.page_name}</span>
+                <span class="block text-[10px] text-slate-400 font-mono truncate">ID: ${p.page_id}</span>
+              </div>
+            </label>
+            <button type="button" onclick="publishToOnePageDirectly('${p.page_id}')" class="w-full py-1.5 px-2 bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 hover:border-indigo-600 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-sm">
+              <i class="fa-solid fa-paper-plane text-[9px]"></i> Зөвхөн энэ хуудсанд нийтлэх
+            </button>
+          </div>
         `).join('');
+        updateSelectedPagesCount();
+        renderPerPagePublisherBoard(activeBoardVideoId, '', null);
       } catch (e) {
         console.error("Error loading publisher pages:", e);
+      }
+    }
+
+    function publishToOnePageDirectly(pageId) {
+      const checkboxes = document.querySelectorAll('.page-checkbox');
+      checkboxes.forEach(cb => cb.checked = (String(cb.value) === String(pageId)));
+      updateSelectedPagesCount();
+      showToast('🚀 Сонгосон хуудсанд нийтэлж байна...');
+      document.getElementById('form-multi-publish').requestSubmit();
+    }
+
+    function updateSelectedPagesCount() {
+      const checkboxes = document.querySelectorAll('.page-checkbox:checked');
+      const count = checkboxes.length;
+      const countBadge = document.getElementById('selected-pages-count-badge');
+      const quickHint = document.getElementById('quick-publish-hint');
+      const quickLabel = document.getElementById('quick-btn-publish-label');
+      const mainBtn = document.getElementById('btn-submit-publish');
+
+      if (countBadge) countBadge.innerText = `${count} сонгогдсон`;
+      if (quickHint) {
+        if (count === 1) {
+          const checkedBox = checkboxes[0];
+          const pageObj = (publisherPages || []).find(p => String(p.page_id) === String(checkedBox.value));
+          const pName = pageObj ? pageObj.page_name : '1 хуудас';
+          quickHint.innerText = `Зөвхөн "${pName}" дээр нийтлэхээр сонгогдлоо`;
+        } else if (count === 0) {
+          quickHint.innerText = `Ядаж нэг хуудас сонгоно уу`;
+        } else {
+          quickHint.innerText = `Сонгосон ${count} хуудас дээр зэрэг нийтлэхэд бэлэн`;
+        }
+      }
+
+      let labelText = `Сонгосон хуудсанд нийтлэх`;
+      if (count === 1) {
+        const checkedBox = checkboxes[0];
+        const pageObj = (publisherPages || []).find(p => String(p.page_id) === String(checkedBox.value));
+        const shortName = pageObj ? pageObj.page_name.split(' ')[0] : '';
+        labelText = `Энэ хуудсанд нийтлэх ${shortName ? `(${shortName})` : ''}`;
+      } else if (count > 1) {
+        labelText = `Сонгосон ${count} хуудсанд зэрэг нийтлэх`;
+      } else {
+        labelText = `Хуудас сонгоно уу`;
+      }
+
+      if (quickLabel) quickLabel.innerText = labelText;
+      if (mainBtn && !mainBtn.disabled) {
+        const span = mainBtn.querySelector('span');
+        if (span) span.innerText = labelText;
       }
     }
 
@@ -1569,6 +1642,7 @@
       const allChecked = Array.from(checkboxes).every(cb => cb.checked);
       checkboxes.forEach(cb => cb.checked = !allChecked);
       document.getElementById('btn-toggle-all-pages').innerText = allChecked ? 'Бүгдийг сонгох' : 'Сонголтыг цуцлах';
+      updateSelectedPagesCount();
     }
 
     function setMediaType(type) {
@@ -1721,7 +1795,6 @@
         btn.innerHTML = `<i class="fa-solid fa-sparkles mr-1"></i> Текст үүсгэх`;
       }
     }
-
     function applyCaptionVariation(idx) {
       if (window._aiVariations && window._aiVariations[idx]) {
         document.getElementById('pub-caption').value = window._aiVariations[idx].text;
@@ -2040,15 +2113,27 @@
     }
 
     function renderPerPagePublisherBoard(videoId, caption, primaryResult) {
-      activeBoardVideoId = videoId;
+      activeBoardVideoId = videoId || null;
       const board = document.getElementById('per-page-publisher-board');
       if (!board) return;
       board.classList.remove('hidden');
 
       const vidDisp = document.getElementById('board-video-id-display');
-      if (vidDisp) vidDisp.innerText = videoId;
+      if (vidDisp) vidDisp.innerText = videoId ? videoId : 'Шинэ бичлэг эсвэл бэлэн ID сонгоогүй байна';
+
+      const statusBadge = document.getElementById('board-video-status-badge');
+      if (statusBadge) {
+        if (videoId) {
+          statusBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1';
+          statusBadge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Facebook шалгаж байна...`;
+        } else {
+          statusBadge.className = 'px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 flex items-center gap-1';
+          statusBadge.innerHTML = `<i class="fa-solid fa-info-circle text-indigo-600"></i> Бичлэг оруулах эсвэл ID хийхэд идэвхжинэ`;
+        }
+      }
+
       const captionInput = document.getElementById('board-caption-input');
-      if (captionInput) captionInput.value = caption || '';
+      if (captionInput && caption) captionInput.value = caption;
 
       // Initialize page states
       boardPagesState = {};
@@ -2071,12 +2156,13 @@
       });
 
       renderBoardCards();
-      checkBoardVideoStatus(false);
-
-      // Smooth scroll into view
-      setTimeout(() => {
-        board.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      if (videoId) {
+        checkBoardVideoStatus(false);
+        // Smooth scroll into view
+        setTimeout(() => {
+          board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     }
 
     function renderBoardCards() {
@@ -2163,10 +2249,15 @@
         }
       }
     }
-
     async function publishToSpecificPage(pageId) {
       if (!activeBoardVideoId) {
-        alert('Бичлэгийн ID тодорхойгүй байна!');
+        const manualInput = document.getElementById('manual-crosspost-vid-id');
+        const raw = (manualInput ? manualInput.value : '').trim();
+        if (raw) {
+          openPerPageBoardFromManualInput();
+          return;
+        }
+        publishToOnePageDirectly(pageId);
         return;
       }
       const caption = (document.getElementById('board-caption-input') ? document.getElementById('board-caption-input').value : '').trim() ||
@@ -2217,7 +2308,13 @@
 
     async function publishAllRemainingPagesSequentially() {
       if (!activeBoardVideoId) {
-        alert('Бичлэгийн ID тодорхойгүй байна!');
+        const manualInput = document.getElementById('manual-crosspost-vid-id');
+        const raw = (manualInput ? manualInput.value : '').trim();
+        if (raw) {
+          openPerPageBoardFromManualInput();
+          return;
+        }
+        document.getElementById('form-multi-publish').requestSubmit();
         return;
       }
       const remaining = KNOWN_PAGES_META.filter(p => {

@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+import time
 
 # Ensure project root is in sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,11 +71,8 @@ async def privacy_policy():
     ]
     for p in possible_paths:
         if p.exists():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    return HTMLResponse(content=f.read())
-            except Exception:
-                pass
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Privacy Policy</h1><p>https://www.huree.site</p>")
 
 # --- FACEBOOK WEBHOOK ENDPOINTS ---
@@ -98,6 +96,69 @@ async def verify_fb_webhook(request: Request):
 
     print(f"[Facebook Webhook] Баталгаажуулалт амжилтгүй. Ирсэн: {token}, Хүлээж буй: {expected_token}")
     return Response(content="Forbidden", status_code=403)
+
+
+# In-memory TTL cache to eliminate duplicate webhooks and Meta retry bursts
+_IN_FLIGHT_EVENT_CACHE: Dict[str, float] = {}
+
+def is_duplicate_or_reserve_event(event_id: str) -> bool:
+    """
+    Prevents duplicate webhook events, Meta retry bursts, and concurrent runs.
+    Uses in-memory TTL cache + atomic database reservation table.
+    Returns True if event is duplicate / already reserved.
+    Returns False if event is fresh and successfully locked.
+    """
+    if not event_id:
+        return False
+    now = time.time()
+    # Prune events older than 300s
+    expired = [k for k, t in _IN_FLIGHT_EVENT_CACHE.items() if now - t > 300]
+    for k in expired:
+        _IN_FLIGHT_EVENT_CACHE.pop(k, None)
+
+    # 1. Check in-memory burst cache
+    if event_id in _IN_FLIGHT_EVENT_CACHE:
+        return True
+
+    # 2. Check & reserve atomically in SQLite
+    is_first = database.reserve_comment_id(event_id)
+    if not is_first:
+        _IN_FLIGHT_EVENT_CACHE[event_id] = now
+        return True
+
+    _IN_FLIGHT_EVENT_CACHE[event_id] = now
+    return False
+
+def is_spam_comment(text: str) -> bool:
+    """
+    Check if comment is spam (links, crypto/casino, repetitive spam, telegram bots).
+    """
+    if not text:
+        return False
+    t = text.lower().strip()
+
+    # Block foreign spam / scam patterns
+    spam_patterns = [
+        "t.me/", "telegram", "whatsapp", "wa.me/", "viber",
+        "casino", "1xbet", "poker", "betting", "crypto", "usdt", "bitcoin",
+        "forex", "binary option", "free money", "mөнгө олох", "мөнгө олох",
+        "sex", "porn", "xxx", "накрутка", "заработок", "работа в интернете"
+    ]
+    for sp in spam_patterns:
+        if sp in t:
+            return True
+
+    # Block third party links (except huree.site)
+    if ("http://" in t or "https://" in t or "www." in t) and "huree.site" not in t:
+        return True
+
+    # Block junk repetitive characters (e.g. "aaaaaa", "......")
+    if len(t) > 12:
+        unique_chars = len(set(t.replace(" ", "")))
+        if unique_chars <= 3:
+            return True
+
+    return False
 
 
 @app.post("/api/webhook")
@@ -134,6 +195,8 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
 
     default_public_reply = settings.get("default_public_reply", ai_service.HUREE_COMMENT_REPLY)
     default_private_reply = settings.get("default_private_reply", ai_service.HUREE_PROMO_TEXT)
+    all_connected_pages = database.get_connected_pages()
+    all_page_ids = {str(p["page_id"]) for p in all_connected_pages}
 
     for entry in body.get("entry", []):
         page_id = str(entry.get("id"))
@@ -143,7 +206,7 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
         # --- 1. DIRECT MESSENGER CHAT (Шууд Messenger чатаар ирсэн зурваст хариулах) ---
         for msg_event in entry.get("messaging", []):
             sender_id = str(msg_event.get("sender", {}).get("id") or "")
-            if sender_id == page_id or not sender_id:
+            if sender_id in all_page_ids or sender_id == page_id or not sender_id:
                 continue
             msg_obj = msg_event.get("message", {})
             if msg_obj.get("is_echo"):
@@ -158,7 +221,14 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
             if not msg_id:
                 continue
 
-            if database.is_comment_processed(msg_id):
+            # Давхардаж хариу илгээхээс сэргийлэх (Atomic deduplication)
+            if is_duplicate_or_reserve_event(msg_id):
+                print(f"[Skip duplicate / in-flight Direct Message]: {msg_id}")
+                continue
+
+            # Спам шалгах
+            if is_spam_comment(msg_text):
+                print(f"[Spam Direct Message ignored]: {msg_id}")
                 continue
 
             print(f"[Processing Direct Messenger]: Page: {page_id}, Sender: {sender_id}, Text: {msg_text}")
@@ -200,6 +270,7 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
             # Зөвхөн коммент мөн эсэхийг шалгах (item == comment эсвэл comment_id байгаа эсэх)
             is_comment = (val.get("item") == "comment") or ("comment_id" in val)
             verb = val.get("verb", "add")
+
             if is_comment and verb in ["add", "edited", None]:
                 comment_id = str(val.get("comment_id") or val.get("id") or "")
                 post_id = str(val.get("post_id") or "default_all")
@@ -213,8 +284,8 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                 if not comment_id:
                     continue
 
-                # Хуудасны өөрийн комментод хариулж loop үүсгэхээс сэргийлэх
-                if sender_id == page_id:
+                # Хуудасны өөрийн комментод хариулж loop үүсгэхээс сэргийлэх (Бүх 6 хуудасны ID-г шалгах)
+                if sender_id in all_page_ids or sender_id == page_id:
                     continue
 
                 # Ботын өөрийн хариулсан комментод давхар хариулж loop үүсгэхээс сэргийлэх
@@ -222,9 +293,26 @@ async def process_webhook_event(body: Dict[str, Any], settings: Dict[str, str]):
                     print(f"[Skip self bot reply]: {comment_id}")
                     continue
 
-                # Давхардаж боловсруулагдахаас сэргийлэх (Deduplication)
-                if database.is_comment_processed(comment_id):
-                    print(f"[Skip already processed comment]: {comment_id}")
+                # Спам коммент шалгах
+                if is_spam_comment(comment_text):
+                    print(f"[Spam comment blocked]: {comment_id} - '{comment_text[:40]}'")
+                    is_duplicate_or_reserve_event(comment_id)
+                    database.log_comment(
+                        comment_id=comment_id,
+                        post_id=post_id,
+                        sender_id=sender_id,
+                        sender_name=sender_name,
+                        comment_text=comment_text,
+                        sentiment="negative",
+                        intent="spam",
+                        public_reply="[Spam Filtered - No Reply]",
+                        private_reply="[Spam Filtered - No Reply]"
+                    )
+                    continue
+
+                # Давхардаж боловсруулагдахаас сэргийлэх (Atomic early reservation + memory lock)
+                if is_duplicate_or_reserve_event(comment_id):
+                    print(f"[Skip duplicate / in-flight comment]: {comment_id}")
                     continue
 
                 print(f"[Processing Comment]: Page: {page_id}, CommentID: {comment_id}, User: {sender_name}, Text: {comment_text}")
@@ -400,6 +488,7 @@ async def sync_recent_comments(limit: int = 1):
                 )
                 if vids_res.status_code == 200:
                     all_target_nodes.extend(vids_res.json().get("data", []))
+
                 for post in all_target_nodes:
                     post_id = post["id"]
                     # 2. Тухайн постын сүүлийн 5 комментыг авах
@@ -600,7 +689,7 @@ async def publish_multi_pages(payload: MultiPublishRequest):
             if not first_post_url:
                 first_post_url = post_url
 
-
+            # Record into published_posts database
             database.save_published_post(
                 page_id=pid,
                 page_name=pname,
@@ -808,7 +897,6 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
             r_pid = str(p["page_id"])
             r_name = p["page_name"]
             r_tok = p["access_token"]
-
             r_post_id = None
             err_msg = None
 

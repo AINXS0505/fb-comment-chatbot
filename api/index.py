@@ -303,7 +303,6 @@ class PostRuleSchema(BaseModel):
     private_reply_template: Optional[str] = ""
     use_ai: Optional[int] = 1
     is_active: Optional[int] = 1
-    
 
 @app.post("/api/rules")
 @app.post("/rules")
@@ -399,7 +398,6 @@ async def sync_recent_comments(limit: int = 1):
                 )
                 if vids_res.status_code == 200:
                     all_target_nodes.extend(vids_res.json().get("data", []))
-
                 for post in all_target_nodes:
                     post_id = post["id"]
                     # 2. Тухайн постын сүүлийн 5 комментыг авах
@@ -580,10 +578,10 @@ async def publish_multi_pages(payload: MultiPublishRequest):
     results = []
     first_post_url = ""
 
-    for page in target_pages:
-        pid = str(page["page_id"])
-        pname = page["page_name"]
-        token = page["access_token"]
+    for page_item in target_pages:
+        pid = str(page_item["page_id"])
+        pname = page_item["page_name"]
+        token = page_item["access_token"]
 
         pub_res = await facebook_service.publish_post_to_page(
             page_id=pid,
@@ -652,7 +650,6 @@ async def publish_multi_pages(payload: MultiPublishRequest):
         "first_post_url": share_url_target,
         "group_shares": group_shares
     }
-
 
 # --- DIRECT BROWSER-TO-FACEBOOK RESUMABLE CHUNKED UPLOAD (500MB+ SUPPORT) ---
 
@@ -802,7 +799,6 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
             )
     except Exception as allow_err:
         print(f"[Allow Crossposting Warning]: {allow_err}")
-
     # Replicate instantly across all selected pages using Facebook Native Crossposting API (<1s per page, handles 500MB+)
     async with httpx.AsyncClient(timeout=30.0) as client:
         for p in remaining_pages:
@@ -829,6 +825,8 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
                     raw_err = cp_data.get("error", {}).get("message", "Crosspost failed")
                     if "No permission due to music rights" in raw_err:
                         err_msg = "Meta дууны эрх илрүүлсэн тул зөвхөн Facebook сайт дээрээс Share хийж болно"
+                    elif "No permission to reuse video" in raw_err:
+                        err_msg = "Facebook видеог боловсруулж байна. Түр хүлээгээд 'Дахин нийтлэх' дарна уу"
                     else:
                         err_msg = raw_err
             except Exception as e:
@@ -881,7 +879,7 @@ async def finish_and_replicate_video_endpoint(payload: VideoUploadFinishRequest)
         "first_post_url": primary_post_url,
         "group_shares": group_shares
     }
-    
+
 
 @app.get("/api/post-metrics/{post_id}")
 @app.get("/post-metrics/{post_id}")
@@ -1030,6 +1028,8 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
                     raw_err = cp_data.get("error", {}).get("message", "Crosspost failed")
                     if "No permission due to music rights" in raw_err:
                         err_msg = "Meta дууны эрх илрүүлсэн тул зөвхөн Facebook сайт дээрээс Share хийж болно"
+                    elif "No permission to reuse video" in raw_err:
+                        err_msg = "Facebook видеог боловсруулж байна. Түр хүлээгээд 'Дахин нийтлэх' дарна уу"
                     else:
                         err_msg = raw_err
                     results.append({"success": False, "page_name": r_name, "page_id": r_pid, "error": err_msg})
@@ -1042,6 +1042,47 @@ async def crosspost_existing_endpoint(payload: ReCrosspostRequest):
         "total_targets": len(results),
         "results": results
     }
+
+@app.get("/api/video-status/{video_id}")
+@app.get("/video-status/{video_id}")
+async def get_video_status_endpoint(video_id: str):
+    """Facebook дээрх видеоны боловсруулалтын төлөв шалгах (ready / processing)"""
+    clean_vid_id = video_id.split("_")[-1] if "_" in video_id else video_id
+    all_pages = database.get_connected_pages()
+    tok = all_pages[0]["access_token"]
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            r = await client.get(
+                f"https://graph.facebook.com/v21.0/{clean_vid_id}",
+                params={"fields": "id,status,description", "access_token": tok}
+            )
+            if r.status_code == 200:
+                d = r.json()
+                st = d.get("status", {})
+                video_status = st.get("video_status", "ready")
+                return {
+                    "success": True,
+                    "video_id": clean_vid_id,
+                    "video_status": video_status,
+                    "is_ready": video_status == "ready",
+                    "description": d.get("description", "")
+                }
+            else:
+                return {
+                    "success": False,
+                    "video_id": clean_vid_id,
+                    "video_status": "unknown",
+                    "is_ready": False,
+                    "error": r.json().get("error", {}).get("message", "Video not found")
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "video_id": clean_vid_id,
+                "video_status": "unknown",
+                "is_ready": False,
+                "error": str(e)
+            }
 
 
 @app.get("/api/published-posts")

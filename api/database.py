@@ -200,6 +200,14 @@ def init_db():
     );
     """)
 
+    # 8. Atomic Processed IDs Table (prevents webhook race conditions and duplicate replies)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS processed_comment_ids (
+        comment_id TEXT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
     # Populate popular default movie groups if empty
     cursor.execute("SELECT COUNT(*) FROM facebook_groups")
     if cursor.fetchone()[0] == 0:
@@ -229,7 +237,6 @@ def get_page_token(page_id: str) -> Optional[str]:
         if p["page_id"] == page_id:
             return p["access_token"]
     return get_settings().get("fb_page_access_token", "")
-
 def get_connected_pages() -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -321,13 +328,45 @@ def log_comment(comment_id: str, post_id: str, sender_id: str, sender_name: str,
     conn.commit()
     conn.close()
 
-def is_comment_processed(comment_id: str) -> bool:
+def reserve_comment_id(comment_id: str) -> bool:
+    """
+    Atomically records comment_id or message_id in processed_comment_ids.
+    Returns True if successfully recorded (first time).
+    Returns False if already exists (duplicate webhook or retry).
+    """
+    if not comment_id:
+        return False
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM comments_log WHERE comment_id = ?", (comment_id,))
+    try:
+        cursor.execute(
+            "INSERT INTO processed_comment_ids (comment_id, created_at) VALUES (?, CURRENT_TIMESTAMP)",
+            (str(comment_id),)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    except Exception as e:
+        print(f"[reserve_comment_id exception]: {e}")
+        return True
+    finally:
+        conn.close()
+
+def is_comment_processed(comment_id: str) -> bool:
+    if not comment_id:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM comments_log WHERE comment_id = ?", (str(comment_id),))
     res = cursor.fetchone()
+    if res is not None:
+        conn.close()
+        return True
+    cursor.execute("SELECT comment_id FROM processed_comment_ids WHERE comment_id = ?", (str(comment_id),))
+    res2 = cursor.fetchone()
     conn.close()
-    return res is not None
+    return res2 is not None
 
 def get_recent_comments(limit: int = 50) -> List[Dict[str, Any]]:
     conn = get_connection()
